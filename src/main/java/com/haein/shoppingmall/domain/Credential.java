@@ -34,4 +34,20 @@ public class Credential {
         this.password = password;
         this.member = member;
     }
+
+    public IdentityProvider getIdentityProvider() {
+        return identityProvider;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public Member getMember() {
+        return member;
+    }
+
+    public void changePassword(String password) {
+        this.password = password;
+    }
 }

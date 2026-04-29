@@ -45,6 +45,14 @@ public class Member {
         this.point = 0;
     }
 
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void changeRole(Role role) {
+        this.role = role;
+    }
+
     public Long getId() {
         return id;
     }

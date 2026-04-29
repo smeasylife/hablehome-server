@@ -4,6 +4,7 @@ import com.haein.shoppingmall.dto.CartItemResponse;
 import com.haein.shoppingmall.dto.CartSelectionRequest;
 import com.haein.shoppingmall.dto.ReviewCommentRequest;
 import com.haein.shoppingmall.dto.ReviewRequest;
+import com.haein.shoppingmall.security.AuthMember;
 import com.haein.shoppingmall.service.CartService;
 import com.haein.shoppingmall.service.LikeService;
 import com.haein.shoppingmall.service.ReviewService;
@@ -11,12 +12,12 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -35,34 +36,34 @@ public class ActivityController {
     @PostMapping("/{itemId}/cart")
     public ResponseEntity<Void> addCart(
             @PathVariable Long itemId,
-            @RequestHeader(value = "X-Member-Id", required = false) Long memberId
+            @AuthenticationPrincipal AuthMember authMember
     ) {
-        cartService.addCart(itemId, memberId);
+        cartService.addCart(itemId, authMember.getMemberId());
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/cart")
     public List<CartItemResponse> findCartItems(
-            @RequestHeader(value = "X-Member-Id", required = false) Long memberId
+            @AuthenticationPrincipal AuthMember authMember
     ) {
-        return cartService.findCartItems(memberId);
+        return cartService.findCartItems(authMember.getMemberId());
     }
 
     @DeleteMapping("/cart")
     public ResponseEntity<Void> removeSelectedCartItems(
             @Valid @RequestBody CartSelectionRequest request,
-            @RequestHeader(value = "X-Member-Id", required = false) Long memberId
+            @AuthenticationPrincipal AuthMember authMember
     ) {
-        cartService.removeSelectedCartItems(request.cartIds(), memberId);
+        cartService.removeSelectedCartItems(request.cartIds(), authMember.getMemberId());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{itemId}/like")
     public ResponseEntity<Void> like(
             @PathVariable Long itemId,
-            @RequestHeader(value = "X-Member-Id", required = false) Long memberId
+            @AuthenticationPrincipal AuthMember authMember
     ) {
-        likeService.like(itemId, memberId);
+        likeService.like(itemId, authMember.getMemberId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -70,9 +71,9 @@ public class ActivityController {
     public ResponseEntity<Void> createReview(
             @PathVariable Long itemId,
             @Valid @RequestBody ReviewRequest request,
-            @RequestHeader(value = "X-Member-Id", required = false) Long memberId
+            @AuthenticationPrincipal AuthMember authMember
     ) {
-        reviewService.createReview(itemId, request, memberId);
+        reviewService.createReview(itemId, request, authMember.getMemberId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

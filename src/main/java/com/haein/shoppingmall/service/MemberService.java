@@ -9,17 +9,14 @@ import com.haein.shoppingmall.dto.VerifyCodeRequest;
 import com.haein.shoppingmall.exception.BusinessException;
 import com.haein.shoppingmall.repository.CredentialRepository;
 import com.haein.shoppingmall.repository.MemberRepository;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,18 +27,21 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final CredentialRepository credentialRepository;
+    private final PasswordEncoder passwordEncoder;
     private final Map<String, VerificationCode> verificationCodes = new ConcurrentHashMap<>();
     private final Random random = new Random();
 
-    public MemberService(MemberRepository memberRepository, CredentialRepository credentialRepository) {
+    public MemberService(MemberRepository memberRepository, CredentialRepository credentialRepository, PasswordEncoder passwordEncoder) {
         this.memberRepository = memberRepository;
         this.credentialRepository = credentialRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public void sendCode(String email) {
+    public String sendCode(String email) {
         String code = String.format("%06d", random.nextInt(1_000_000));
         verificationCodes.put(email, new VerificationCode(code, LocalDateTime.now().plusMinutes(5), false));
         log.info("Signup verification code for {} is {}", email, code);
+        return code;
     }
 
     public void verifyCode(VerifyCodeRequest request) {
@@ -65,24 +65,17 @@ public class MemberService {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "이메일 인증이 필요합니다");
         }
         Member member = memberRepository.save(new Member(request.nickname(), request.email(), request.phoneNumber(), Role.ROLE_USER));
-        credentialRepository.save(new Credential(IdentityProvider.LOCAL, hashPassword(request.password()), member));
+        credentialRepository.save(new Credential(IdentityProvider.LOCAL, passwordEncoder.encode(request.password()), member));
         verificationCodes.remove(request.email());
     }
 
     @Transactional(readOnly = true)
     public Member findCurrentMember(Long memberId) {
-        Long id = memberId == null ? 1L : memberId;
-        return memberRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, "회원 정보를 찾을 수 없습니다"));
-    }
-
-    private String hashPassword(String password) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(password.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 is not available", exception);
+        if (memberId == null) {
+            throw new BusinessException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다");
         }
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, "회원 정보를 찾을 수 없습니다"));
     }
 
     private record VerificationCode(String code, LocalDateTime expiresAt, boolean verified) {

@@ -1,14 +1,15 @@
 package com.haein.shoppingmall.controller;
 
 import com.haein.shoppingmall.dto.QuestionRequest;
+import com.haein.shoppingmall.security.AuthMember;
 import com.haein.shoppingmall.service.QuestionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,9 +25,9 @@ public class QuestionController {
     @PostMapping("/question")
     public ResponseEntity<Void> createQuestion(
             @Valid @RequestBody QuestionRequest request,
-            @RequestHeader(value = "X-Member-Id", required = false) Long memberId
+            @AuthenticationPrincipal AuthMember authMember
     ) {
-        questionService.createQuestion(request, memberId);
+        questionService.createQuestion(request, authMember.getMemberId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
