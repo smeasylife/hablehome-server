@@ -1,0 +1,17 @@
+.gradle/
+build/
+out/
+
+*.class
+*.log
+
+.DS_Store
+.env
+.env.*
+!.env.example
+
+src/main/resources/*.yml
+!src/main/resources/application.yml
+
+.idea/
+.vscode/

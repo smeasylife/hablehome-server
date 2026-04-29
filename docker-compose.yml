@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: highlog-postgres
+    environment:
+      POSTGRES_DB: shopping_mall
+      POSTGRES_USER: ksm9203
+      POSTGRES_PASSWORD: ksm1234
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  spring:
+    build: .
+    container_name: spring-app
+    depends_on:
+      - highlog-postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://highlog-postgres:5432/shopping_mall
+      SPRING_DATASOURCE_USERNAME: ksm9203
+      SPRING_DATASOURCE_PASSWORD: ksm1234
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      FRONTEND_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-data:
