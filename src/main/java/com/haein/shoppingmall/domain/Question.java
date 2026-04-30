@@ -50,6 +50,10 @@ public class Question {
         this.answer = answer;
     }
 
+    public void clearAnswer() {
+        this.answer = null;
+    }
+
     public Long getId() {
         return id;
     }
@@ -68,5 +72,13 @@ public class Question {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public Item getItem() {
+        return item;
+    }
+
+    public Member getMember() {
+        return member;
     }
 }

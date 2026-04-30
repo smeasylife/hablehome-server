@@ -114,4 +114,8 @@ public class Item {
     public List<ItemPicture> getPictures() {
         return pictures;
     }
+
+    public List<ItemCategory> getItemCategories() {
+        return itemCategories;
+    }
 }

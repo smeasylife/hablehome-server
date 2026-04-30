@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HABLE Admin Login</title>
+  <link rel="stylesheet" th:href="@{/admin/admin.css}">
+</head>
+<body>
+  <main class="login-page">
+    <section class="login-card">
+      <p class="eyebrow">Admin Login</p>
+      <h1>관리자 로그인</h1>
+      <form class="form" th:action="@{/admin/login}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <label>
+          <span>이메일</span>
+          <input type="email" name="email" autocomplete="email" required>
+        </label>
+        <label>
+          <span>비밀번호</span>
+          <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button class="button primary" type="submit">로그인</button>
+      </form>
+      <p class="alert" th:if="${error}" th:text="${error}"></p>
+      <p class="summary">
+        관리자 권한이 있는 계정으로만 접근할 수 있습니다.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

@@ -76,6 +76,10 @@ public class Review {
         this.comment = comment;
     }
 
+    public void removeComment() {
+        this.comment = null;
+    }
+
     public Long getId() {
         return id;
     }
@@ -98,6 +102,10 @@ public class Review {
 
     public Member getMember() {
         return member;
+    }
+
+    public Item getItem() {
+        return item;
     }
 
     public ReviewComment getComment() {

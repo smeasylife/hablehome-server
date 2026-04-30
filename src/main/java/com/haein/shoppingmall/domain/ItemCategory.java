@@ -30,4 +30,8 @@ public class ItemCategory {
         this.item = item;
         this.category = category;
     }
+
+    public Category getCategory() {
+        return category;
+    }
 }

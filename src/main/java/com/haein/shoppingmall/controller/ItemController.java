@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -52,5 +53,11 @@ public class ItemController {
     public ResponseEntity<Void> updateItem(@PathVariable Long itemId, @Valid @RequestBody ItemRequest request) {
         itemService.updateItem(itemId, request);
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{itemId}")
+    public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
+        itemService.deleteItem(itemId);
+        return ResponseEntity.noContent().build();
     }
 }

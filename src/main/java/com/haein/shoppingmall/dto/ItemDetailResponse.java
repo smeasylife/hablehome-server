@@ -12,6 +12,7 @@ public record ItemDetailResponse(
         String color,
         String information,
         List<ItemPictureResponse> itemPictures,
+        List<String> categories,
         List<ReviewResponse> reviews,
         List<QuestionResponse> questions
 ) {

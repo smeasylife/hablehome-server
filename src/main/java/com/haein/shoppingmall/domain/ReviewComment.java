@@ -35,6 +35,10 @@ public class ReviewComment {
         this.createdAt = LocalDateTime.now();
     }
 
+    public void update(String comment) {
+        this.comment = comment;
+    }
+
     public String getComment() {
         return comment;
     }

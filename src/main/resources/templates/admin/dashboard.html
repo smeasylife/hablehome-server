@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('HABLE Admin')}"></head>
+<body>
+<div class="admin-shell">
+  <aside th:replace="~{admin/fragments :: sidebar('dashboard')}"></aside>
+  <div class="content">
+    <header th:replace="~{admin/fragments :: topbar}"></header>
+    <main class="page">
+      <div class="page-header">
+        <div>
+          <p class="eyebrow">Overview</p>
+          <h1>운영 현황</h1>
+          <p class="summary">상품, QnA, 리뷰 답변 업무로 바로 이동할 수 있습니다.</p>
+        </div>
+      </div>
+      <section class="grid metrics">
+        <a class="metric" th:href="@{/admin/products}">
+          <p class="metric-label">상품</p>
+          <p class="metric-value" th:text="${itemCount}">0</p>
+        </a>
+        <a class="metric" th:href="@{/admin/questions}">
+          <p class="metric-label">미답변 QnA</p>
+          <p class="metric-value" th:text="${questionCount}">0</p>
+        </a>
+        <a class="metric" th:href="@{/admin/reviews}">
+          <p class="metric-label">미답변 리뷰</p>
+          <p class="metric-value" th:text="${reviewCount}">0</p>
+        </a>
+      </section>
+    </main>
+  </div>
+</div>
+</body>
+</html>

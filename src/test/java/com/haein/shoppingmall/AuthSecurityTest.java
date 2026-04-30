@@ -6,6 +6,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -206,6 +208,38 @@ class AuthSecurityTest {
                         .with(csrf())
                         .param("answer", "관리자 답변"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void adminPagesRequireLogin() throws Exception {
+        mockMvc.perform(get("/admin"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/admin/login"));
+    }
+
+    @Test
+    void adminPagesRenderWithThymeleaf() throws Exception {
+        HttpSession session = login("admin@example.com", "admin-password");
+        Long itemId = itemRepository.findAll().get(0).getId();
+
+        mockMvc.perform(get("/admin").session((org.springframework.mock.web.MockHttpSession) session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("운영 현황")));
+        mockMvc.perform(get("/admin/products").session((org.springframework.mock.web.MockHttpSession) session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("상품 목록")));
+        mockMvc.perform(get("/admin/products/new").session((org.springframework.mock.web.MockHttpSession) session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("상품 등록")));
+        mockMvc.perform(get("/admin/products/" + itemId + "/edit").session((org.springframework.mock.web.MockHttpSession) session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("상품 수정")));
+        mockMvc.perform(get("/admin/questions").session((org.springframework.mock.web.MockHttpSession) session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("QnA 답변")));
+        mockMvc.perform(get("/admin/reviews").session((org.springframework.mock.web.MockHttpSession) session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("리뷰 답변")));
     }
 
     @Test

@@ -4,10 +4,12 @@ import com.haein.shoppingmall.domain.Item;
 import com.haein.shoppingmall.domain.Member;
 import com.haein.shoppingmall.domain.Review;
 import com.haein.shoppingmall.domain.ReviewComment;
+import com.haein.shoppingmall.dto.AdminReviewResponse;
 import com.haein.shoppingmall.dto.ReviewRequest;
 import com.haein.shoppingmall.exception.BusinessException;
 import com.haein.shoppingmall.repository.ReviewCommentRepository;
 import com.haein.shoppingmall.repository.ReviewRepository;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,10 +54,54 @@ public class ReviewService {
 
     @Transactional
     public void createComment(Long reviewId, String comment) {
-        Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다"));
-        ReviewComment reviewComment = new ReviewComment(comment, review);
+        if (comment == null || comment.isBlank()) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "답변 내용을 입력해 주세요");
+        }
+        Review review = findReview(reviewId);
+        if (review.getComment() != null) {
+            review.getComment().update(comment);
+            return;
+        }
+        ReviewComment reviewComment = reviewCommentRepository.save(new ReviewComment(comment, review));
         review.setComment(reviewComment);
-        reviewCommentRepository.save(reviewComment);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminReviewResponse> findAdminReviews() {
+        return reviewRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(review -> new AdminReviewResponse(
+                        review.getId(),
+                        review.getItem() == null ? null : review.getItem().getId(),
+                        review.getItem() == null ? "상품 없음" : review.getItem().getName(),
+                        review.getMember() == null ? "알 수 없음" : review.getMember().getNickname(),
+                        review.getRating(),
+                        review.getProductOption(),
+                        review.getPictures().stream().map(picture -> picture.getUrl()).toList(),
+                        review.getContent(),
+                        review.getComment() == null ? null : review.getComment().getComment(),
+                        review.getCreatedAt()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public void updateComment(Long reviewId, String comment) {
+        createComment(reviewId, comment);
+    }
+
+    @Transactional
+    public void deleteComment(Long reviewId) {
+        Review review = findReview(reviewId);
+        ReviewComment comment = review.getComment();
+        if (comment == null) {
+            return;
+        }
+        review.removeComment();
+        reviewCommentRepository.delete(comment);
+    }
+
+    private Review findReview(Long reviewId) {
+        return reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다"));
     }
 }

@@ -4,6 +4,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haein.shoppingmall.common.ErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,12 +32,17 @@ public class SecurityConfig {
                 .securityContext(context -> context.securityContextRepository(securityContextRepository()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/admin/login", "/admin/admin.css").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/admin/login").permitAll()
+                        .requestMatchers("/admin-api/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/admin/**", "/admin").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/items", "/items/*").permitAll()
                         .requestMatchers("/signup/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/kakao/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/csrf").permitAll()
                         .requestMatchers(HttpMethod.POST, "/items", "/*/comment", "/answer/*", "/coupon").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/items/*").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/items/*").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/*/cart", "/*/like", "/*/review", "/question").authenticated()
                         .requestMatchers(HttpMethod.GET, "/cart", "/auth/me").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/cart").authenticated()
@@ -45,9 +51,9 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) ->
-                                writeError(response, objectMapper, HttpServletResponse.SC_UNAUTHORIZED, "인증이 필요합니다"))
+                                handleAuthenticationError(request, response, objectMapper))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                writeError(response, objectMapper, HttpServletResponse.SC_FORBIDDEN, "접근 권한이 없습니다"))
+                                handleAccessDenied(request, response, objectMapper))
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -75,5 +81,34 @@ public class SecurityConfig {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getWriter(), ErrorResponse.of(message));
+    }
+
+    private void handleAuthenticationError(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            ObjectMapper objectMapper
+    ) throws java.io.IOException {
+        if (isAdminPageRequest(request)) {
+            response.sendRedirect("/admin/login");
+            return;
+        }
+        writeError(response, objectMapper, HttpServletResponse.SC_UNAUTHORIZED, "인증이 필요합니다");
+    }
+
+    private void handleAccessDenied(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            ObjectMapper objectMapper
+    ) throws java.io.IOException {
+        if (isAdminPageRequest(request)) {
+            response.sendRedirect("/admin/login");
+            return;
+        }
+        writeError(response, objectMapper, HttpServletResponse.SC_FORBIDDEN, "접근 권한이 없습니다");
+    }
+
+    private boolean isAdminPageRequest(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri.equals("/admin") || (uri.startsWith("/admin/") && !uri.startsWith("/admin-api/"));
     }
 }

@@ -11,6 +11,7 @@ import com.haein.shoppingmall.dto.ItemRequest;
 import com.haein.shoppingmall.dto.QuestionResponse;
 import com.haein.shoppingmall.dto.ReviewResponse;
 import com.haein.shoppingmall.exception.BusinessException;
+import com.haein.shoppingmall.repository.CartRepository;
 import com.haein.shoppingmall.repository.CategoryRepository;
 import com.haein.shoppingmall.repository.ItemLikeRepository;
 import com.haein.shoppingmall.repository.ItemRepository;
@@ -28,6 +29,7 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final CategoryRepository categoryRepository;
+    private final CartRepository cartRepository;
     private final ItemLikeRepository itemLikeRepository;
     private final ReviewRepository reviewRepository;
     private final QuestionRepository questionRepository;
@@ -35,12 +37,14 @@ public class ItemService {
     public ItemService(
             ItemRepository itemRepository,
             CategoryRepository categoryRepository,
+            CartRepository cartRepository,
             ItemLikeRepository itemLikeRepository,
             ReviewRepository reviewRepository,
             QuestionRepository questionRepository
     ) {
         this.itemRepository = itemRepository;
         this.categoryRepository = categoryRepository;
+        this.cartRepository = cartRepository;
         this.itemLikeRepository = itemLikeRepository;
         this.reviewRepository = reviewRepository;
         this.questionRepository = questionRepository;
@@ -97,6 +101,9 @@ public class ItemService {
                 item.getColor(),
                 item.getInformation(),
                 item.getPictures().stream().map(picture -> new ItemPictureResponse(picture.getUrl())).toList(),
+                item.getItemCategories().stream()
+                        .map(itemCategory -> itemCategory.getCategory().getName().name())
+                        .toList(),
                 reviews,
                 questions
         );
@@ -132,6 +139,16 @@ public class ItemService {
         );
         item.replacePictures(request.pictureUrls());
         item.replaceCategories(findCategories(request.categories()));
+    }
+
+    @Transactional
+    public void deleteItem(Long itemId) {
+        Item item = findItemEntity(itemId);
+        cartRepository.deleteByItemId(itemId);
+        itemLikeRepository.deleteByItemId(itemId);
+        reviewRepository.deleteAll(reviewRepository.findByItemIdOrderByCreatedAtDesc(itemId));
+        questionRepository.deleteAll(questionRepository.findByItemIdOrderByCreatedAtDesc(itemId));
+        itemRepository.delete(item);
     }
 
     @Transactional(readOnly = true)

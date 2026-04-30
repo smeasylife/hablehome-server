@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${mode == 'edit'} ? '상품 수정' : '상품 등록')}"></head>
+<body>
+<div class="admin-shell">
+  <aside th:replace="~{admin/fragments :: sidebar(${mode == 'edit'} ? 'products' : 'product-new')}"></aside>
+  <div class="content">
+    <header th:replace="~{admin/fragments :: topbar}"></header>
+    <main class="page">
+      <div class="page-header">
+        <div>
+          <p class="eyebrow">Products</p>
+          <h1 th:text="${mode == 'edit'} ? '상품 수정' : '상품 등록'">상품 등록</h1>
+          <p class="summary">기본 정보, 가격, 이미지, 카테고리를 입력합니다.</p>
+        </div>
+      </div>
+
+      <form class="form"
+            th:object="${itemForm}"
+            th:action="${mode == 'edit'} ? @{/admin/products/{id}(id=${itemId})} : @{/admin/products}"
+            method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <label>
+          <span>상품명</span>
+          <input th:field="*{name}" required>
+        </label>
+        <div class="grid form-grid-3">
+          <label>
+            <span>정가</span>
+            <input type="number" min="0" th:field="*{price}" required>
+          </label>
+          <label>
+            <span>할인가</span>
+            <input type="number" min="0" th:field="*{salePrice}" required>
+          </label>
+          <label>
+            <span>배송비</span>
+            <input type="number" min="0" th:field="*{shippingPrice}" required>
+          </label>
+        </div>
+        <div class="grid form-grid-2">
+          <label>
+            <span>사이즈</span>
+            <input th:field="*{size}" required>
+          </label>
+          <label>
+            <span>색상</span>
+            <input th:field="*{color}" required>
+          </label>
+        </div>
+        <label>
+          <span>상품 정보</span>
+          <textarea th:field="*{information}" required></textarea>
+        </label>
+        <label>
+          <span>이미지 URL</span>
+          <textarea th:field="*{pictureUrls}" required></textarea>
+        </label>
+        <fieldset>
+          <legend>카테고리</legend>
+          <div class="category-list">
+            <label th:each="category : ${categories}">
+              <input type="checkbox" th:field="*{categories}" th:value="${category}">
+              <span th:text="${category}">NEW</span>
+            </label>
+          </div>
+        </fieldset>
+        <button class="button primary" type="submit">저장</button>
+      </form>
+    </main>
+  </div>
+</div>
+</body>
+</html>
