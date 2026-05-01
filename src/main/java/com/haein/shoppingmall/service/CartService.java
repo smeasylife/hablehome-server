@@ -4,6 +4,7 @@ import com.haein.shoppingmall.domain.Cart;
 import com.haein.shoppingmall.domain.Item;
 import com.haein.shoppingmall.domain.ItemPicture;
 import com.haein.shoppingmall.domain.Member;
+import com.haein.shoppingmall.dto.CartRequest;
 import com.haein.shoppingmall.dto.CartItemResponse;
 import com.haein.shoppingmall.repository.CartRepository;
 import java.util.List;
@@ -24,13 +25,17 @@ public class CartService {
     }
 
     @Transactional
-    public void addCart(Long itemId, Long memberId) {
+    public void addCart(Long itemId, CartRequest request, Long memberId) {
         Member member = memberService.findCurrentMember(memberId);
-        if (cartRepository.existsByItemIdAndMemberId(itemId, member.getId())) {
-            return;
-        }
         Item item = itemService.findItemEntity(itemId);
-        cartRepository.save(new Cart(item, member));
+        String color = optionOrDefault(request == null ? null : request.color(), item.getColor());
+        String size = optionOrDefault(request == null ? null : request.size(), item.getSize());
+        int quantity = request == null || request.quantity() == null ? 1 : request.quantity();
+        cartRepository.findByItemIdAndMemberIdAndColorAndSize(itemId, member.getId(), color, size)
+                .ifPresentOrElse(
+                        cart -> cart.increaseQuantity(quantity),
+                        () -> cartRepository.save(new Cart(item, member, color, size, quantity))
+                );
     }
 
     @Transactional(readOnly = true)
@@ -55,10 +60,18 @@ public class CartService {
                 item.getName(),
                 item.getPrice(),
                 item.getSalePrice(),
-                item.getColor(),
-                item.getSize(),
+                cart.getColor(),
+                cart.getSize(),
+                cart.getQuantity(),
                 firstPictureUrl(item)
         );
+    }
+
+    private String optionOrDefault(String option, String defaultValue) {
+        if (option == null || option.isBlank()) {
+            return defaultValue;
+        }
+        return option;
     }
 
     private String firstPictureUrl(Item item) {

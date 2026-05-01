@@ -38,4 +38,28 @@ public class Coupon {
         this.startTime = startTime;
         this.endTime = endTime;
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public DiscountType getDiscountType() {
+        return discountType;
+    }
+
+    public Integer getDiscountValue() {
+        return discountValue;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
 }

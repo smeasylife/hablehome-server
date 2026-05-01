@@ -1,6 +1,7 @@
 package com.haein.shoppingmall.controller;
 
 import com.haein.shoppingmall.dto.CartItemResponse;
+import com.haein.shoppingmall.dto.CartRequest;
 import com.haein.shoppingmall.dto.CartSelectionRequest;
 import com.haein.shoppingmall.dto.ReviewCommentRequest;
 import com.haein.shoppingmall.dto.ReviewRequest;
@@ -36,9 +37,10 @@ public class ActivityController {
     @PostMapping("/{itemId}/cart")
     public ResponseEntity<Void> addCart(
             @PathVariable Long itemId,
+            @Valid @RequestBody(required = false) CartRequest request,
             @AuthenticationPrincipal AuthMember authMember
     ) {
-        cartService.addCart(itemId, authMember.getMemberId());
+        cartService.addCart(itemId, request, authMember.getMemberId());
         return ResponseEntity.noContent().build();
     }
 
@@ -65,6 +67,15 @@ public class ActivityController {
     ) {
         likeService.like(itemId, authMember.getMemberId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @DeleteMapping("/{itemId}/like")
+    public ResponseEntity<Void> unlike(
+            @PathVariable Long itemId,
+            @AuthenticationPrincipal AuthMember authMember
+    ) {
+        likeService.unlike(itemId, authMember.getMemberId());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{itemId}/review")

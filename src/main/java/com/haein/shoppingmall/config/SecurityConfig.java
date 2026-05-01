@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .securityContext(context -> context.securityContextRepository(securityContextRepository()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/admin/login", "/admin/admin.css").permitAll()
                         .requestMatchers(HttpMethod.POST, "/admin/login").permitAll()
                         .requestMatchers("/admin-api/**").hasAuthority("ROLE_ADMIN")
@@ -45,7 +46,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/items/*").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/*/cart", "/*/like", "/*/review", "/question").authenticated()
                         .requestMatchers(HttpMethod.GET, "/cart", "/auth/me").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/cart").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/cart", "/*/like").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auth/logout").authenticated()
                         .anyRequest().authenticated()
                 )

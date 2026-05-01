@@ -21,17 +21,20 @@ public class ReviewService {
     private final ReviewCommentRepository reviewCommentRepository;
     private final ItemService itemService;
     private final MemberService memberService;
+    private final OrderService orderService;
 
     public ReviewService(
             ReviewRepository reviewRepository,
             ReviewCommentRepository reviewCommentRepository,
             ItemService itemService,
-            MemberService memberService
+            MemberService memberService,
+            OrderService orderService
     ) {
         this.reviewRepository = reviewRepository;
         this.reviewCommentRepository = reviewCommentRepository;
         this.itemService = itemService;
         this.memberService = memberService;
+        this.orderService = orderService;
     }
 
     @Transactional
@@ -41,6 +44,9 @@ public class ReviewService {
         }
         Item item = itemService.findItemEntity(itemId);
         Member member = memberService.findCurrentMember(memberId);
+        if (!orderService.hasPurchasedItem(member.getId(), item.getId())) {
+            throw new BusinessException(HttpStatus.FORBIDDEN, "구매한 상품만 리뷰를 작성할 수 있습니다");
+        }
         Review review = new Review(
                 request.content(),
                 request.rating() == null ? 5 : request.rating(),

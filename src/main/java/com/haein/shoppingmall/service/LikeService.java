@@ -29,4 +29,10 @@ public class LikeService {
         Item item = itemService.findItemEntity(itemId);
         itemLikeRepository.save(new ItemLike(item, member));
     }
+
+    @Transactional
+    public void unlike(Long itemId, Long memberId) {
+        Member member = memberService.findCurrentMember(memberId);
+        itemLikeRepository.deleteByItemIdAndMemberId(itemId, member.getId());
+    }
 }

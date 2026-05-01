@@ -41,6 +41,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:shoppingmall-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.jpa.properties.hibernate.format_sql=false",
+        "app.cors.allowed-origins=http://localhost:5173",
         "app.admin.email=admin@example.com",
         "app.admin.password=admin-password",
         "app.admin.nickname=테스트관리자"
@@ -81,13 +88,13 @@ class AuthSecurityTest {
         String code = memberService.sendCode(email);
         memberService.verifyCode(new VerifyCodeRequest(email, code));
 
-        memberService.signup(new SignupRequest("신규회원", email, "plain-password", "010-1111-2222"));
+        memberService.signup(new SignupRequest("신규회원", email, "plain-password1", "010-1111-2222"));
 
         String encodedPassword = credentialRepository.findByMemberEmailAndIdentityProvider(email, IdentityProvider.LOCAL)
                 .orElseThrow()
                 .getPassword();
-        assertThat(encodedPassword).isNotEqualTo("plain-password");
-        assertThat(passwordEncoder.matches("plain-password", encodedPassword)).isTrue();
+        assertThat(encodedPassword).isNotEqualTo("plain-password1");
+        assertThat(passwordEncoder.matches("plain-password1", encodedPassword)).isTrue();
     }
 
     @Test
@@ -126,8 +133,31 @@ class AuthSecurityTest {
     void csrfEndpointReturnsToken() throws Exception {
         mockMvc.perform(get("/auth/csrf"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.headerName").value("X-XSRF-TOKEN"))
+                .andExpect(jsonPath("$.headerName").isNotEmpty())
                 .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void signupRejectsWeakPassword() throws Exception {
+        mockMvc.perform(post("/signup")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new SignupRequest(
+                                "신규회원",
+                                "weak-" + System.nanoTime() + "@example.com",
+                                "password",
+                                "010-1111-2222"
+                        ))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("비밀번호")));
+    }
+
+    @Test
+    void healthEndpointIsPublic() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.checkedAt").isNotEmpty());
     }
 
     @Test

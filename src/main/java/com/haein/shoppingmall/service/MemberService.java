@@ -9,9 +9,9 @@ import com.haein.shoppingmall.dto.VerifyCodeRequest;
 import com.haein.shoppingmall.exception.BusinessException;
 import com.haein.shoppingmall.repository.CredentialRepository;
 import com.haein.shoppingmall.repository.MemberRepository;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,19 +28,33 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final CredentialRepository credentialRepository;
     private final PasswordEncoder passwordEncoder;
+    private final VerificationMailSender verificationMailSender;
     private final Map<String, VerificationCode> verificationCodes = new ConcurrentHashMap<>();
-    private final Random random = new Random();
+    private final SecureRandom random = new SecureRandom();
 
-    public MemberService(MemberRepository memberRepository, CredentialRepository credentialRepository, PasswordEncoder passwordEncoder) {
+    public MemberService(
+            MemberRepository memberRepository,
+            CredentialRepository credentialRepository,
+            PasswordEncoder passwordEncoder,
+            VerificationMailSender verificationMailSender
+    ) {
         this.memberRepository = memberRepository;
         this.credentialRepository = credentialRepository;
         this.passwordEncoder = passwordEncoder;
+        this.verificationMailSender = verificationMailSender;
     }
 
     public String sendCode(String email) {
+        log.info("Signup verification code requested for {}", email);
+        if (memberRepository.existsByEmail(email)) {
+            log.warn("Signup verification code request rejected because email already exists: {}", email);
+            throw new BusinessException(HttpStatus.CONFLICT, "이미 가입된 이메일입니다");
+        }
         String code = String.format("%06d", random.nextInt(1_000_000));
+        log.info("Signup verification code generated for {}. Sending mail...", email);
+        verificationMailSender.sendVerificationCode(email, code);
         verificationCodes.put(email, new VerificationCode(code, LocalDateTime.now().plusMinutes(5), false));
-        log.info("Signup verification code for {} is {}", email, code);
+        log.info("Signup verification code sent and stored for {}", email);
         return code;
     }
 

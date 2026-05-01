@@ -40,8 +40,12 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemDetailResponse findItem(@PathVariable Long itemId) {
-        return itemService.findItem(itemId);
+    public ItemDetailResponse findItem(
+            @PathVariable Long itemId,
+            @AuthenticationPrincipal AuthMember authMember
+    ) {
+        Long memberId = authMember == null ? null : authMember.getMemberId();
+        return itemService.findItem(itemId, memberId);
     }
 
     @PostMapping

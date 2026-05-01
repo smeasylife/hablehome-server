@@ -61,13 +61,21 @@ public class ItemService {
                         item.getSalePrice(),
                         item.getColor(),
                         firstPictureUrl(item),
-                        memberId != null && itemLikeRepository.existsByItemIdAndMemberId(item.getId(), memberId)
+                        memberId != null && itemLikeRepository.existsByItemIdAndMemberId(item.getId(), memberId),
+                        item.getItemCategories().stream()
+                                .map(itemCategory -> itemCategory.getCategory().getName().name())
+                                .toList()
                 ))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public ItemDetailResponse findItem(Long itemId) {
+        return findItem(itemId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ItemDetailResponse findItem(Long itemId, Long memberId) {
         Item item = findItemEntity(itemId);
         List<ReviewResponse> reviews = reviewRepository.findByItemIdOrderByCreatedAtDesc(itemId).stream()
                 .map(review -> new ReviewResponse(
@@ -104,6 +112,7 @@ public class ItemService {
                 item.getItemCategories().stream()
                         .map(itemCategory -> itemCategory.getCategory().getName().name())
                         .toList(),
+                memberId != null && itemLikeRepository.existsByItemIdAndMemberId(item.getId(), memberId),
                 reviews,
                 questions
         );

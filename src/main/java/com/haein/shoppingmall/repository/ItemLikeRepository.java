@@ -8,4 +8,6 @@ public interface ItemLikeRepository extends JpaRepository<ItemLike, Long> {
     boolean existsByItemIdAndMemberId(Long itemId, Long memberId);
 
     void deleteByItemId(Long itemId);
+
+    void deleteByItemIdAndMemberId(Long itemId, Long memberId);
 }

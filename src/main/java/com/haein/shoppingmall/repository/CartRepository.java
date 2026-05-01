@@ -10,8 +10,13 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
 
     boolean existsByItemIdAndMemberId(Long itemId, Long memberId);
 
+    java.util.Optional<Cart> findByItemIdAndMemberIdAndColorAndSize(Long itemId, Long memberId, String color, String size);
+
     @EntityGraph(attributePaths = {"item", "item.pictures"})
     List<Cart> findByMemberIdOrderByIdDesc(Long memberId);
+
+    @EntityGraph(attributePaths = {"item", "item.pictures"})
+    List<Cart> findByIdInAndMemberId(Collection<Long> ids, Long memberId);
 
     void deleteByIdInAndMemberId(Collection<Long> ids, Long memberId);
 

@@ -53,6 +53,14 @@ public class Member {
         this.role = role;
     }
 
+    public void usePoint(int point) {
+        this.point -= point;
+    }
+
+    public void restorePoint(int point) {
+        this.point += point;
+    }
+
     public Long getId() {
         return id;
     }

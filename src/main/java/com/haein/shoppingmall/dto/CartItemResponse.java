@@ -8,6 +8,7 @@ public record CartItemResponse(
         Integer salePrice,
         String color,
         String size,
+        Integer quantity,
         String pictureUrl
 ) {
 }

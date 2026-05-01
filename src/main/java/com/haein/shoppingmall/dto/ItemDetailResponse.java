@@ -13,6 +13,7 @@ public record ItemDetailResponse(
         String information,
         List<ItemPictureResponse> itemPictures,
         List<String> categories,
+        boolean like,
         List<ReviewResponse> reviews,
         List<QuestionResponse> questions
 ) {

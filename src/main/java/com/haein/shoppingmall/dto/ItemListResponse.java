@@ -1,5 +1,7 @@
 package com.haein.shoppingmall.dto;
 
+import java.util.List;
+
 public record ItemListResponse(
         Long id,
         String name,
@@ -7,6 +9,7 @@ public record ItemListResponse(
         Integer salePrice,
         String color,
         String pictureUrl,
-        boolean like
+        boolean like,
+        List<String> categories
 ) {
 }

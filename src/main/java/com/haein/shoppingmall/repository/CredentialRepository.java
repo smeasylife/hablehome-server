@@ -10,4 +10,7 @@ public interface CredentialRepository extends JpaRepository<Credential, Long> {
 
     @EntityGraph(attributePaths = "member")
     Optional<Credential> findByMemberEmailAndIdentityProvider(String email, IdentityProvider identityProvider);
+
+    @EntityGraph(attributePaths = "member")
+    Optional<Credential> findByIdentityProviderAndPassword(IdentityProvider identityProvider, String password);
 }

@@ -9,55 +9,60 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
 @Entity
-public class Cart {
+public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private PurchaseOrder order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id")
     private Item item;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id")
-    private Member member;
+    private String itemName;
 
     private String color;
 
     private String size;
 
+    private Integer unitPrice;
+
     private Integer quantity;
 
-    protected Cart() {
+    private Integer totalPrice;
+
+    protected OrderItem() {
     }
 
-    public Cart(Item item, Member member) {
-        this(item, member, item.getColor(), item.getSize(), 1);
-    }
-
-    public Cart(Item item, Member member, String color, String size, Integer quantity) {
+    public OrderItem(PurchaseOrder order, Item item, String color, String size, Integer unitPrice, Integer quantity) {
+        this.order = order;
         this.item = item;
-        this.member = member;
+        this.itemName = item.getName();
         this.color = color;
         this.size = size;
+        this.unitPrice = unitPrice;
         this.quantity = quantity;
-    }
-
-    public void increaseQuantity(int quantity) {
-        this.quantity += quantity;
+        this.totalPrice = unitPrice * quantity;
     }
 
     public Long getId() {
         return id;
     }
 
+    public PurchaseOrder getOrder() {
+        return order;
+    }
+
     public Item getItem() {
         return item;
     }
 
-    public Member getMember() {
-        return member;
+    public String getItemName() {
+        return itemName;
     }
 
     public String getColor() {
@@ -68,7 +73,15 @@ public class Cart {
         return size;
     }
 
+    public Integer getUnitPrice() {
+        return unitPrice;
+    }
+
     public Integer getQuantity() {
         return quantity;
+    }
+
+    public Integer getTotalPrice() {
+        return totalPrice;
     }
 }
