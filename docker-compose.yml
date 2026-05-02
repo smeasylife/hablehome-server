@@ -17,7 +17,7 @@ services:
 
   spring:
     build:
-      context: ./backend
+      context: .
     container_name: spring
     restart: unless-stopped
     depends_on:
