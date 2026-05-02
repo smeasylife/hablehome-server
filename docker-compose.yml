@@ -1,24 +1,33 @@
 services:
   postgres:
     image: postgres:15
-    container_name: shopping-mall-postgres
+    container_name: postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-shopping_mall}
-      POSTGRES_USER: ${POSTGRES_USER:-shopping}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shopping}
+      POSTGRES_USER: ${POSTGRES_USER:-ksm9203}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ksm1234}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   spring:
-    build: .
-    container_name: shopping-mall-backend
+    build:
+      context: ./backend
+    container_name: spring
+    restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shopping_mall}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-shopping}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-shopping}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-ksm9203}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-ksm1234}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
       APP_ADMIN_EMAIL: ${APP_ADMIN_EMAIL:-}
