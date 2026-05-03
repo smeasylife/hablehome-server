@@ -14,6 +14,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app-net
 
   spring:
     build:
@@ -48,8 +50,40 @@ services:
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       SESSION_COOKIE_SAME_SITE: ${SESSION_COOKIE_SAME_SITE:-lax}
       SESSION_COOKIE_MAX_AGE: ${SESSION_COOKIE_MAX_AGE:-7d}
+    expose:
+      - "8080"
+    networks:
+      - app-net
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx
+    restart: unless-stopped
+    depends_on:
+      - spring
     ports:
-      - "${SPRING_PORT:-8080}:8080"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    networks:
+      - app-net
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot
+    profiles:
+      - certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
 
 volumes:
   postgres-data:
+  certbot-etc:
+  certbot-www:
+
+networks:
+  app-net:
