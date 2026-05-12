@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,9 +21,13 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.InvalidCsrfTokenException;
+import org.springframework.security.web.csrf.MissingCsrfTokenException;
 
 @Configuration
 public class SecurityConfig {
+
+    private static final String CSRF_TOKEN_INVALID = "CSRF_TOKEN_INVALID";
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
@@ -54,7 +59,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) ->
                                 handleAuthenticationError(request, response, objectMapper))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                handleAccessDenied(request, response, objectMapper))
+                                handleAccessDenied(request, response, objectMapper, accessDeniedException))
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -79,9 +84,23 @@ public class SecurityConfig {
     }
 
     private void writeError(HttpServletResponse response, ObjectMapper objectMapper, int status, String message) throws java.io.IOException {
+        writeError(response, objectMapper, status, null, message);
+    }
+
+    private void writeError(
+            HttpServletResponse response,
+            ObjectMapper objectMapper,
+            int status,
+            String code,
+            String message
+    ) throws java.io.IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getWriter(), ErrorResponse.of(message));
+        if (code == null) {
+            objectMapper.writeValue(response.getWriter(), ErrorResponse.of(message));
+            return;
+        }
+        objectMapper.writeValue(response.getWriter(), ErrorResponse.of(code, message));
     }
 
     private void handleAuthenticationError(
@@ -99,13 +118,29 @@ public class SecurityConfig {
     private void handleAccessDenied(
             HttpServletRequest request,
             HttpServletResponse response,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            AccessDeniedException accessDeniedException
     ) throws java.io.IOException {
+        if (isCsrfFailure(accessDeniedException)) {
+            writeError(
+                    response,
+                    objectMapper,
+                    HttpServletResponse.SC_FORBIDDEN,
+                    CSRF_TOKEN_INVALID,
+                    "CSRF token is missing or invalid"
+            );
+            return;
+        }
         if (isAdminPageRequest(request)) {
             response.sendRedirect("/admin/login");
             return;
         }
         writeError(response, objectMapper, HttpServletResponse.SC_FORBIDDEN, "접근 권한이 없습니다");
+    }
+
+    private boolean isCsrfFailure(AccessDeniedException accessDeniedException) {
+        return accessDeniedException instanceof InvalidCsrfTokenException
+                || accessDeniedException instanceof MissingCsrfTokenException;
     }
 
     private boolean isAdminPageRequest(HttpServletRequest request) {

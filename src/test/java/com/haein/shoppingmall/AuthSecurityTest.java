@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haein.shoppingmall.domain.IdentityProvider;
 import com.haein.shoppingmall.domain.Item;
+import com.haein.shoppingmall.domain.ItemLike;
 import com.haein.shoppingmall.domain.Member;
 import com.haein.shoppingmall.domain.Question;
 import com.haein.shoppingmall.domain.Review;
@@ -21,6 +22,7 @@ import com.haein.shoppingmall.dto.LoginRequest;
 import com.haein.shoppingmall.dto.SignupRequest;
 import com.haein.shoppingmall.dto.VerifyCodeRequest;
 import com.haein.shoppingmall.repository.CredentialRepository;
+import com.haein.shoppingmall.repository.ItemLikeRepository;
 import com.haein.shoppingmall.repository.ItemRepository;
 import com.haein.shoppingmall.repository.MemberRepository;
 import com.haein.shoppingmall.repository.QuestionRepository;
@@ -69,6 +71,9 @@ class AuthSecurityTest {
 
     @Autowired
     private ItemRepository itemRepository;
+
+    @Autowired
+    private ItemLikeRepository itemLikeRepository;
 
     @Autowired
     private MemberRepository memberRepository;
@@ -138,6 +143,16 @@ class AuthSecurityTest {
     }
 
     @Test
+    void csrfFailureReturnsDedicatedErrorCode() throws Exception {
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest("user@example.com", "password"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_TOKEN_INVALID"))
+                .andExpect(jsonPath("$.message").value("CSRF token is missing or invalid"));
+    }
+
+    @Test
     void signupRejectsWeakPassword() throws Exception {
         mockMvc.perform(post("/signup")
                         .with(csrf())
@@ -158,6 +173,49 @@ class AuthSecurityTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.checkedAt").isNotEmpty());
+    }
+
+    @Test
+    void itemSearchReturnsProductsByPartialName() throws Exception {
+        mockMvc.perform(get("/items/search").param("keyword", "이불"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name =~ /.*이불.*/)]").exists())
+                .andExpect(jsonPath("$[?(@.name == '모달 스트라이프 침구 세트')]").doesNotExist());
+    }
+
+    @Test
+    void itemSearchIgnoresCaseForEnglishNames() throws Exception {
+        itemRepository.save(new Item("CASE Test Bedding", 10000, 9000, 3000, "Q", "White", "영문 검색 테스트"));
+
+        mockMvc.perform(get("/items/search").param("keyword", "case test"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name == 'CASE Test Bedding')]").exists());
+    }
+
+    @Test
+    void itemSearchReturnsEmptyArrayForBlankKeyword() throws Exception {
+        mockMvc.perform(get("/items/search").param("keyword", "   "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void itemSearchReflectsCurrentMemberLikeState() throws Exception {
+        Member member = memberRepository.findByEmail("user@example.com").orElseThrow();
+        Item item = itemRepository.findAll().stream()
+                .filter(candidate -> candidate.getName().contains("이불"))
+                .findFirst()
+                .orElseThrow();
+        itemLikeRepository.save(new ItemLike(item, member));
+        HttpSession session = login("user@example.com", "password");
+
+        mockMvc.perform(get("/items/search")
+                        .session((org.springframework.mock.web.MockHttpSession) session)
+                        .param("keyword", item.getName()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(item.getId()))
+                .andExpect(jsonPath("$[0].like").value(true));
     }
 
     @Test

@@ -8,6 +8,7 @@
 - 인증: Spring Security 세션 인증, `JSESSIONID` 쿠키
 - CSRF: `CookieCsrfTokenRepository.withHttpOnlyFalse()` 사용
 - 상태 변경 요청: CSRF 토큰 필요
+- CSRF 검증 실패 응답: `403` + `code: "CSRF_TOKEN_INVALID"`
 - CORS: `app.cors.allowed-origins`에 등록된 origin만 credential 요청 허용
 - JSON null: Jackson `default-property-inclusion: non_null`
 
@@ -17,9 +18,12 @@
 {
   "success": false,
   "data": null,
+  "code": "CSRF_TOKEN_INVALID",
   "message": "오류 메시지"
 }
 ```
+
+`code`는 선택 필드이며, CSRF 토큰 누락/불일치처럼 클라이언트가 분기해야 하는 오류에만 내려갈 수 있습니다.
 
 주요 상태 코드:
 
@@ -27,7 +31,7 @@
 |---|---|
 | 400 | validation 실패 또는 잘못된 비즈니스 요청 |
 | 401 | 인증 필요 또는 로그인 실패 |
-| 403 | 권한 부족 또는 구매하지 않은 상품 리뷰 작성 |
+| 403 | 권한 부족, 구매하지 않은 상품 리뷰 작성, CSRF 토큰 누락/불일치 |
 | 404 | 상품/주문/질문/리뷰 없음 |
 | 409 | 이미 가입된 이메일 |
 | 500 | 처리되지 않은 서버 오류 또는 필수 외부 설정 누락 |
@@ -198,6 +202,36 @@ Response:
 서버 규칙:
 
 - 페이지당 20개
+- `createdAt` 내림차순
+
+### `GET /items/search?keyword={keyword}`
+
+상품명 기준으로 상품을 검색합니다. 비로그인 접근 가능하며, 로그인 상태면 각 상품의 `like` 여부가 반영됩니다.
+
+Request:
+
+- `keyword`: 상품명 검색어. 앞뒤 공백은 제거되며, 빈 검색어는 빈 배열을 반환합니다.
+
+Response:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "클린 코튼 차렵이불",
+    "price": 89000,
+    "salePrice": 69000,
+    "color": "White",
+    "pictureUrl": "https://...",
+    "like": false,
+    "categories": ["NEW", "BEST"]
+  }
+]
+```
+
+서버 규칙:
+
+- 상품명 부분 일치, 대소문자 무시
 - `createdAt` 내림차순
 
 ### `GET /items/{itemId}`

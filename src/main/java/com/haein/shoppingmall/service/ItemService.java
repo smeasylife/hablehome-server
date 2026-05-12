@@ -54,18 +54,23 @@ public class ItemService {
     public List<ItemListResponse> findItems(int page, Long memberId) {
         return itemRepository.findAll(PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .stream()
-                .map(item -> new ItemListResponse(
-                        item.getId(),
-                        item.getName(),
-                        item.getPrice(),
-                        item.getSalePrice(),
-                        item.getColor(),
-                        firstPictureUrl(item),
-                        memberId != null && itemLikeRepository.existsByItemIdAndMemberId(item.getId(), memberId),
-                        item.getItemCategories().stream()
-                                .map(itemCategory -> itemCategory.getCategory().getName().name())
-                                .toList()
-                ))
+                .map(item -> toItemListResponse(item, memberId))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ItemListResponse> searchItems(String keyword, Long memberId) {
+        String trimmedKeyword = keyword == null ? "" : keyword.trim();
+        if (trimmedKeyword.isEmpty()) {
+            return List.of();
+        }
+
+        return itemRepository.findByNameContainingIgnoreCase(
+                        trimmedKeyword,
+                        Sort.by(Sort.Direction.DESC, "createdAt")
+                )
+                .stream()
+                .map(item -> toItemListResponse(item, memberId))
                 .toList();
     }
 
@@ -178,5 +183,20 @@ public class ItemService {
                 .findFirst()
                 .map(ItemPicture::getUrl)
                 .orElse("");
+    }
+
+    private ItemListResponse toItemListResponse(Item item, Long memberId) {
+        return new ItemListResponse(
+                item.getId(),
+                item.getName(),
+                item.getPrice(),
+                item.getSalePrice(),
+                item.getColor(),
+                firstPictureUrl(item),
+                memberId != null && itemLikeRepository.existsByItemIdAndMemberId(item.getId(), memberId),
+                item.getItemCategories().stream()
+                        .map(itemCategory -> itemCategory.getCategory().getName().name())
+                        .toList()
+        );
     }
 }

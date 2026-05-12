@@ -39,6 +39,15 @@ public class ItemController {
         return itemService.findItems(page, memberId);
     }
 
+    @GetMapping("/search")
+    public List<ItemListResponse> searchItems(
+            @RequestParam(defaultValue = "") String keyword,
+            @AuthenticationPrincipal AuthMember authMember
+    ) {
+        Long memberId = authMember == null ? null : authMember.getMemberId();
+        return itemService.searchItems(keyword, memberId);
+    }
+
     @GetMapping("/{itemId}")
     public ItemDetailResponse findItem(
             @PathVariable Long itemId,
