@@ -5,9 +5,8 @@
 ## 개요
 
 - ORM: Spring Data JPA, Hibernate
-- 기본 로컬 DB: PostgreSQL `jdbc:postgresql://localhost:5432/shopping_mall`
-- local DDL: `spring.jpa.hibernate.ddl-auto=update`
-- prod DDL: `validate` 권장
+- 기본 DB: PostgreSQL
+- DDL 설정: `SPRING_JPA_HIBERNATE_DDL_AUTO` 환경 변수로 제어, 기본값 `update`
 - ID 생성: 대부분 `GenerationType.IDENTITY`
 
 ## ERD

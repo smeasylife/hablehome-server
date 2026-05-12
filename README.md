@@ -19,14 +19,11 @@ The API is exposed at `http://localhost:8080`.
 - Signup verification codes are stored in memory. Mail delivery is disabled by default and the code is logged for local development.
 - State-changing requests require a CSRF token from `GET /auth/csrf`.
 
-## Profiles and Environment
+## Environment
 
-The default profile is `local`. Use `SPRING_PROFILES_ACTIVE=prod` in production.
+The app uses a single `application.yml`. Runtime differences should be supplied through environment variables or Docker Compose `.env` values.
 
-- `local`: uses PostgreSQL local defaults, `ddl-auto=update`, localhost CORS origins, and non-secure session cookies.
-- `prod`: requires datasource and CORS environment variables, defaults `ddl-auto=validate`, enables SMTP mail, and uses `Secure` + `SameSite=None` session cookies.
-
-Copy the root `.env.example` to your local environment manager and replace every `change-me` value before running outside local development. Production secrets should be supplied by the hosting platform, not committed.
+Production secrets should be supplied by the hosting platform or server `.env`, not committed.
 
 ## Signup Mail
 

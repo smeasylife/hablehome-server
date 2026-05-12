@@ -23,7 +23,7 @@
 | 보안/권한/CSRF | `src/main/java/com/haein/shoppingmall/config/SecurityConfig.java` |
 | CORS | `src/main/java/com/haein/shoppingmall/config/WebConfig.java` |
 | 초기 시드 데이터 | `src/main/java/com/haein/shoppingmall/config/DataInitializer.java` |
-| 환경 설정 | `src/main/resources/application.yml`, `application-local.yml`, `application-prod.yml` |
+| 환경 설정 | `src/main/resources/application.yml` |
 | 관리자 템플릿 | `src/main/resources/templates/admin` |
 | 테스트 | `src/test/java/com/haein/shoppingmall` |
 
