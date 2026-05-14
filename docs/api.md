@@ -296,6 +296,30 @@ Response: 생성된 상품 ID, status `201 Created`
 
 삭제 시 관련 장바구니, 좋아요, 리뷰, 문의를 먼저 삭제합니다.
 
+## 홍보 배너 API
+
+### `GET /promo-banners`
+
+홈 화면 홍보 배너를 노출 순서대로 조회합니다.
+
+Response:
+
+```json
+[
+  {
+    "id": 1,
+    "largeText": "하루 끝을 더 부드럽게",
+    "smallText": "클린 코튼 차렵이불과 함께 침실의 계절감을 바꿔보세요.",
+    "imageUrl": "/images/banners/1/001.png",
+    "buttonLabel": "상품 보기",
+    "itemId": 1,
+    "itemName": "클린 코튼 차렵이불",
+    "linkUrl": "/items/1",
+    "displayOrder": 0
+  }
+]
+```
+
 ## 장바구니와 좋아요 API
 
 ### `POST /{itemId}/cart`
@@ -648,6 +672,12 @@ Thymeleaf 기반 관리자 화면입니다.
 | `POST` | `/admin/login` | 관리자 로그인 처리 |
 | `POST` | `/admin/logout` | 관리자 로그아웃 |
 | `GET` | `/admin` | 대시보드 |
+| `GET` | `/admin/banners` | 홍보 배너 목록 |
+| `GET` | `/admin/banners/new` | 홍보 배너 생성 폼 |
+| `POST` | `/admin/banners` | 홍보 배너 생성 |
+| `GET` | `/admin/banners/{bannerId}/edit` | 홍보 배너 수정 폼 |
+| `POST` | `/admin/banners/{bannerId}` | 홍보 배너 수정 |
+| `POST` | `/admin/banners/{bannerId}/delete` | 홍보 배너 삭제 |
 | `GET` | `/admin/products` | 상품 목록 |
 | `GET` | `/admin/products/new` | 상품 생성 폼 |
 | `POST` | `/admin/products` | 상품 생성 |

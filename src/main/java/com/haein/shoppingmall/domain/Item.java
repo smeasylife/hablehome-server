@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,10 +37,14 @@ public class Item {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder ASC, id ASC")
     private List<ItemPicture> pictures = new ArrayList<>();
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemCategory> itemCategories = new ArrayList<>();
+
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ItemOption> options = new ArrayList<>();
 
     protected Item() {
     }
@@ -67,12 +72,47 @@ public class Item {
 
     public void replacePictures(List<String> pictureUrls) {
         pictures.clear();
-        pictureUrls.forEach(url -> pictures.add(new ItemPicture(url, this)));
+        for (int index = 0; index < pictureUrls.size(); index++) {
+            pictures.add(new ItemPicture(pictureUrls.get(index), this, index));
+        }
     }
 
     public void replaceCategories(List<Category> categories) {
         itemCategories.clear();
         categories.forEach(category -> itemCategories.add(new ItemCategory(this, category)));
+    }
+
+    public void replaceOptions(List<ItemOption> itemOptions) {
+        options.clear();
+        itemOptions.forEach(option -> {
+            option.assignItem(this);
+            options.add(option);
+        });
+        refreshOptionSummary();
+    }
+
+    public ItemOption addOption(String color, String size, Integer stockQuantity) {
+        return addOption(color, size, stockQuantity, 0);
+    }
+
+    public ItemOption addOption(String color, String size, Integer stockQuantity, Integer additionalPrice) {
+        ItemOption option = new ItemOption(color, size, stockQuantity, additionalPrice, this);
+        options.add(option);
+        refreshOptionSummary();
+        return option;
+    }
+
+    public void refreshOptionSummary() {
+        this.color = options.stream()
+                .map(ItemOption::getColor)
+                .distinct()
+                .reduce((left, right) -> left + "/" + right)
+                .orElse("");
+        this.size = options.stream()
+                .map(ItemOption::getSize)
+                .distinct()
+                .reduce((left, right) -> left + "/" + right)
+                .orElse("");
     }
 
     public Long getId() {
@@ -117,5 +157,9 @@ public class Item {
 
     public List<ItemCategory> getItemCategories() {
         return itemCategories;
+    }
+
+    public List<ItemOption> getOptions() {
+        return options;
     }
 }

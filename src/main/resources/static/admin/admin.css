@@ -16,6 +16,7 @@ a {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -113,6 +114,16 @@ textarea {
   font-weight: 700;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logout-form {
+  margin: 0;
+}
+
 .page {
   max-width: 1120px;
   margin: 0 auto;
@@ -166,6 +177,12 @@ h1 {
   cursor: pointer;
 }
 
+.button.small {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
 .button.primary {
   border-color: #ff385c;
   background: #ff385c;
@@ -183,7 +200,7 @@ h1 {
 }
 
 .metrics {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 24px;
 }
 
@@ -271,6 +288,7 @@ legend {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   margin-top: 8px;
@@ -280,7 +298,8 @@ textarea {
   padding: 14px;
 }
 
-input {
+input,
+select {
   height: 56px;
 }
 
@@ -290,9 +309,211 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border: 2px solid #222222;
   padding: 13px;
+}
+
+.form-panel {
+  display: grid;
+  gap: 16px;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.form-panel h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.banner-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.banner-item {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 150px;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.banner-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  background: #f7f7f7;
+  object-fit: cover;
+}
+
+.banner-copy h2 {
+  margin: 6px 0 0;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.banner-copy p {
+  margin: 8px 0 0;
+  color: #3f3f3f;
+  line-height: 1.5;
+}
+
+.banner-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.banner-meta span {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #f7f7f7;
+  padding: 0 12px;
+  color: #3f3f3f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.banner-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.banner-actions form,
+.banner-actions .icon-button {
+  width: 100%;
+}
+
+.banner-current-image {
+  display: grid;
+  gap: 10px;
+}
+
+.banner-current-image img {
+  width: min(100%, 520px);
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  background: #f7f7f7;
+  object-fit: cover;
+}
+
+.empty-state {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  margin-top: 24px;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+}
+
+.empty-state h2,
+.empty-state p {
+  margin: 0;
+}
+
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.fieldset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.option-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.option-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 140px 140px 88px;
+  gap: 12px;
+  align-items: end;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.option-row .icon-button {
+  width: 100%;
+}
+
+.image-fieldset .muted {
+  margin: 8px 0 0;
+}
+
+.image-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.image-choice {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.image-choice img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: #f7f7f7;
+  object-fit: cover;
+}
+
+.image-choice span,
+.image-choice figcaption {
+  color: #6a6a6a;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.image-choice input {
+  width: auto;
+  height: auto;
+  margin: 0 6px 0 0;
+}
+
+.image-remove {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #dddddd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #ff385c;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.file-input {
+  display: block;
+  margin-top: 12px;
 }
 
 .category-list {
@@ -398,7 +619,9 @@ textarea:focus {
 
   .metrics,
   .form-grid-2,
-  .form-grid-3 {
+  .form-grid-3,
+  .option-row,
+  .banner-item {
     grid-template-columns: 1fr;
   }
 }

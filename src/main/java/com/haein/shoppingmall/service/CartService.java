@@ -31,6 +31,10 @@ public class CartService {
         String color = optionOrDefault(request == null ? null : request.color(), item.getColor());
         String size = optionOrDefault(request == null ? null : request.size(), item.getSize());
         int quantity = request == null || request.quantity() == null ? 1 : request.quantity();
+        int requestedTotalQuantity = cartRepository.findByItemIdAndMemberIdAndColorAndSize(itemId, member.getId(), color, size)
+                .map(cart -> cart.getQuantity() + quantity)
+                .orElse(quantity);
+        itemService.validateOptionStock(itemId, color, size, requestedTotalQuantity);
         cartRepository.findByItemIdAndMemberIdAndColorAndSize(itemId, member.getId(), color, size)
                 .ifPresentOrElse(
                         cart -> cart.increaseQuantity(quantity),
@@ -54,16 +58,26 @@ public class CartService {
 
     private CartItemResponse toResponse(Cart cart) {
         Item item = cart.getItem();
+        ItemService.OptionStock stock = itemService.findOptionStock(
+                item.getId(),
+                cart.getColor(),
+                cart.getSize(),
+                cart.getQuantity()
+        );
+        int additionalPrice = itemService.findOptionAdditionalPrice(item.getId(), cart.getColor(), cart.getSize());
         return new CartItemResponse(
                 cart.getId(),
                 item.getId(),
                 item.getName(),
-                item.getPrice(),
-                item.getSalePrice(),
+                item.getPrice() + additionalPrice,
+                itemService.baseEffectivePrice(item) + additionalPrice,
                 cart.getColor(),
                 cart.getSize(),
+                additionalPrice,
                 cart.getQuantity(),
-                firstPictureUrl(item)
+                firstPictureUrl(item),
+                stock.stockQuantity(),
+                stock.available()
         );
     }
 

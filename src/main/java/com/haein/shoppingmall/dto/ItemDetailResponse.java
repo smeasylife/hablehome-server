@@ -12,6 +12,7 @@ public record ItemDetailResponse(
         String color,
         String information,
         List<ItemPictureResponse> itemPictures,
+        List<ItemOptionResponse> options,
         List<String> categories,
         boolean like,
         List<ReviewResponse> reviews,

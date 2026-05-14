@@ -15,6 +15,7 @@ import com.haein.shoppingmall.domain.Member;
 import com.haein.shoppingmall.domain.Role;
 import com.haein.shoppingmall.dto.LoginRequest;
 import com.haein.shoppingmall.repository.CredentialRepository;
+import com.haein.shoppingmall.repository.ItemOptionRepository;
 import com.haein.shoppingmall.repository.ItemRepository;
 import com.haein.shoppingmall.repository.MemberRepository;
 import jakarta.servlet.http.HttpSession;
@@ -61,6 +62,9 @@ class OrderFlowTest {
     private ItemRepository itemRepository;
 
     @Autowired
+    private ItemOptionRepository itemOptionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private String email;
@@ -71,7 +75,10 @@ class OrderFlowTest {
         email = "order-" + System.nanoTime() + "@example.com";
         Member member = memberRepository.save(new Member("주문회원", email, "010-1234-5678", Role.ROLE_USER));
         credentialRepository.save(new Credential(IdentityProvider.LOCAL, passwordEncoder.encode("password1"), member));
-        item = itemRepository.save(new Item("테스트 이불", 30_000, 20_000, 3_000, "S / Q", "White", "테스트 상품"));
+        item = new Item("테스트 이불", 30_000, 20_000, 3_000, "S / Q", "White", "테스트 상품");
+        item.addOption("White", "S", 3);
+        item.addOption("White", "Q", 3, 20_000);
+        item = itemRepository.save(item);
     }
 
     @Test
@@ -93,6 +100,8 @@ class OrderFlowTest {
                         .session((org.springframework.mock.web.MockHttpSession) session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].quantity").value(2))
+                .andExpect(jsonPath("$[0].additionalPrice").value(20_000))
+                .andExpect(jsonPath("$[0].salePrice").value(40_000))
                 .andReturn();
         Long cartId = objectMapper.readTree(cartResult.getResponse().getContentAsString()).get(0).get("cartId").asLong();
 
@@ -106,16 +115,94 @@ class OrderFlowTest {
                                 "shippingAddress", shippingAddress()
                         ))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.amount.itemTotalAmount").value(40_000))
-                .andExpect(jsonPath("$.amount.shippingFee").value(3_000))
-                .andExpect(jsonPath("$.amount.paymentAmount").value(43_000))
+                .andExpect(jsonPath("$.amount.itemTotalAmount").value(80_000))
+                .andExpect(jsonPath("$.amount.shippingFee").value(0))
+                .andExpect(jsonPath("$.amount.paymentAmount").value(80_000))
+                .andExpect(jsonPath("$.items[0].unitPrice").value(40_000))
                 .andExpect(jsonPath("$.items[0].quantity").value(2));
+
+        assertThat(itemOptionRepository.findByItemIdAndColorAndSize(item.getId(), "White", "Q").orElseThrow().getStockQuantity())
+                .isEqualTo(1);
 
         MvcResult emptiedCartResult = mockMvc.perform(get("/cart")
                         .session((org.springframework.mock.web.MockHttpSession) session))
                 .andExpect(status().isOk())
                 .andReturn();
         assertThat(objectMapper.readTree(emptiedCartResult.getResponse().getContentAsString()).isEmpty()).isTrue();
+    }
+
+    @Test
+    void cartDoesNotDecreaseStockAndOrderRejectsInsufficientStock() throws Exception {
+        HttpSession session = login();
+
+        mockMvc.perform(post("/" + item.getId() + "/cart")
+                        .session((org.springframework.mock.web.MockHttpSession) session)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "color", "White",
+                                "size", "Q",
+                                "quantity", 3
+                        ))))
+                .andExpect(status().isNoContent());
+
+        assertThat(itemOptionRepository.findByItemIdAndColorAndSize(item.getId(), "White", "Q").orElseThrow().getStockQuantity())
+                .isEqualTo(3);
+
+        mockMvc.perform(post("/orders")
+                        .session((org.springframework.mock.web.MockHttpSession) session)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "items", List.of(Map.of(
+                                        "itemId", item.getId(),
+                                        "color", "White",
+                                        "size", "Q",
+                                        "quantity", 4
+                                )),
+                                "usedPoint", 0,
+                                "shippingAddress", shippingAddress()
+                        ))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void cancelOrderRestoresStockOnce() throws Exception {
+        HttpSession session = login();
+
+        MvcResult orderResult = mockMvc.perform(post("/orders")
+                        .session((org.springframework.mock.web.MockHttpSession) session)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "items", List.of(Map.of(
+                                        "itemId", item.getId(),
+                                        "color", "White",
+                                        "size", "Q",
+                                        "quantity", 2
+                                )),
+                                "usedPoint", 0,
+                                "shippingAddress", shippingAddress()
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        Long orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString()).get("orderId").asLong();
+
+        assertThat(itemOptionRepository.findByItemIdAndColorAndSize(item.getId(), "White", "Q").orElseThrow().getStockQuantity())
+                .isEqualTo(1);
+
+        mockMvc.perform(post("/orders/" + orderId + "/cancel")
+                        .session((org.springframework.mock.web.MockHttpSession) session)
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/orders/" + orderId + "/cancel")
+                        .session((org.springframework.mock.web.MockHttpSession) session)
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        assertThat(itemOptionRepository.findByItemIdAndColorAndSize(item.getId(), "White", "Q").orElseThrow().getStockQuantity())
+                .isEqualTo(3);
     }
 
     @Test

@@ -2,8 +2,8 @@ package com.haein.shoppingmall.dto;
 
 import com.haein.shoppingmall.domain.CategoryName;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 public class AdminItemForm {
 
@@ -11,11 +11,11 @@ public class AdminItemForm {
     private Integer price;
     private Integer salePrice;
     private Integer shippingPrice = 3000;
-    private String size;
-    private String color;
     private String information;
-    private String pictureUrls;
+    private List<String> retainedPictureUrls = new ArrayList<>();
+    private List<MultipartFile> imageFiles = new ArrayList<>();
     private List<CategoryName> categories = new ArrayList<>(List.of(CategoryName.NEW));
+    private List<AdminItemOptionForm> options = new ArrayList<>(List.of(new AdminItemOptionForm()));
 
     public static AdminItemForm from(ItemDetailResponse item) {
         AdminItemForm form = new AdminItemForm();
@@ -23,40 +23,68 @@ public class AdminItemForm {
         form.setPrice(item.price());
         form.setSalePrice(item.salePrice());
         form.setShippingPrice(item.shippingPrice());
-        form.setSize(item.size());
-        form.setColor(item.color());
         form.setInformation(item.information());
-        form.setPictureUrls(String.join("\n", item.itemPictures().stream()
+        form.setRetainedPictureUrls(item.itemPictures().stream()
                 .map(ItemPictureResponse::url)
-                .toList()));
+                .toList());
         form.setCategories(item.categories().stream()
                 .map(CategoryName::valueOf)
+                .toList());
+        form.setOptions(item.options().stream()
+                .map(option -> new AdminItemOptionForm(
+                        option.color(),
+                        option.size(),
+                        option.stockQuantity(),
+                        option.additionalPrice()
+                ))
                 .toList());
         return form;
     }
 
     public ItemRequest toItemRequest() {
+        List<ItemOptionRequest> optionRequests = normalizedOptions();
         return new ItemRequest(
                 name,
                 price,
                 salePrice,
                 shippingPrice,
-                size,
-                color,
+                summarizedSizes(optionRequests),
+                summarizedColors(optionRequests),
                 information,
-                splitPictureUrls(),
-                categories
+                retainedPictureUrls == null ? List.of() : retainedPictureUrls,
+                categories,
+                optionRequests
         );
     }
 
-    private List<String> splitPictureUrls() {
-        if (pictureUrls == null || pictureUrls.isBlank()) {
+    private List<ItemOptionRequest> normalizedOptions() {
+        if (options == null) {
             return List.of();
         }
-        return Arrays.stream(pictureUrls.split("\\R"))
-                .map(String::trim)
-                .filter(url -> !url.isBlank())
+        return options.stream()
+                .filter(option -> option != null)
+                .map(AdminItemOptionForm::toRequest)
                 .toList();
+    }
+
+    private String summarizedColors(List<ItemOptionRequest> optionRequests) {
+        return optionRequests.stream()
+                .map(ItemOptionRequest::color)
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .distinct()
+                .reduce((left, right) -> left + "/" + right)
+                .orElse("");
+    }
+
+    private String summarizedSizes(List<ItemOptionRequest> optionRequests) {
+        return optionRequests.stream()
+                .map(ItemOptionRequest::size)
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .distinct()
+                .reduce((left, right) -> left + "/" + right)
+                .orElse("");
     }
 
     public String getName() {
@@ -91,22 +119,6 @@ public class AdminItemForm {
         this.shippingPrice = shippingPrice;
     }
 
-    public String getSize() {
-        return size;
-    }
-
-    public void setSize(String size) {
-        this.size = size;
-    }
-
-    public String getColor() {
-        return color;
-    }
-
-    public void setColor(String color) {
-        this.color = color;
-    }
-
     public String getInformation() {
         return information;
     }
@@ -115,12 +127,20 @@ public class AdminItemForm {
         this.information = information;
     }
 
-    public String getPictureUrls() {
-        return pictureUrls;
+    public List<String> getRetainedPictureUrls() {
+        return retainedPictureUrls;
     }
 
-    public void setPictureUrls(String pictureUrls) {
-        this.pictureUrls = pictureUrls;
+    public void setRetainedPictureUrls(List<String> retainedPictureUrls) {
+        this.retainedPictureUrls = retainedPictureUrls == null ? new ArrayList<>() : retainedPictureUrls;
+    }
+
+    public List<MultipartFile> getImageFiles() {
+        return imageFiles;
+    }
+
+    public void setImageFiles(List<MultipartFile> imageFiles) {
+        this.imageFiles = imageFiles == null ? new ArrayList<>() : imageFiles;
     }
 
     public List<CategoryName> getCategories() {
@@ -129,5 +149,15 @@ public class AdminItemForm {
 
     public void setCategories(List<CategoryName> categories) {
         this.categories = categories == null ? new ArrayList<>() : categories;
+    }
+
+    public List<AdminItemOptionForm> getOptions() {
+        return options;
+    }
+
+    public void setOptions(List<AdminItemOptionForm> options) {
+        this.options = options == null || options.isEmpty()
+                ? new ArrayList<>(List.of(new AdminItemOptionForm()))
+                : new ArrayList<>(options);
     }
 }

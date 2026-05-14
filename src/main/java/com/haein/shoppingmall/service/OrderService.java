@@ -61,7 +61,7 @@ public class OrderService {
         ShippingAddress shippingAddress = toAddress(request.shippingAddress());
         List<OrderSourceLine> sourceLines = findOrderLines(request, member);
         List<OrderAmountCalculator.OrderLine> amountLines = sourceLines.stream()
-                .map(line -> new OrderAmountCalculator.OrderLine(line.item(), line.quantity()))
+                .map(line -> new OrderAmountCalculator.OrderLine(line.unitPrice(), line.quantity()))
                 .toList();
         OrderAmountResponse amount = orderAmountCalculator.calculate(
                 amountLines,
@@ -80,14 +80,17 @@ public class OrderService {
                 amount.pointDiscountAmount(),
                 amount.paymentAmount()
         );
-        sourceLines.forEach(line -> order.addOrderItem(new OrderItem(
-                order,
-                line.item(),
-                line.color(),
-                line.size(),
-                orderAmountCalculator.effectivePrice(line.item()),
-                line.quantity()
-        )));
+        sourceLines.forEach(line -> {
+            itemService.decreaseStock(line.item().getId(), line.color(), line.size(), line.quantity());
+            order.addOrderItem(new OrderItem(
+                    order,
+                    line.item(),
+                    line.color(),
+                    line.size(),
+                    line.unitPrice(),
+                    line.quantity()
+            ));
+        });
 
         member.usePoint(amount.pointDiscountAmount());
         PurchaseOrder savedOrder = purchaseOrderRepository.save(order);
@@ -118,6 +121,12 @@ public class OrderService {
         boolean alreadyCanceled = order.getStatus() == OrderStatus.CANCELED;
         order.cancel();
         if (!alreadyCanceled) {
+            order.getOrderItems().forEach(orderItem -> itemService.restoreStock(
+                    orderItem.getItem().getId(),
+                    orderItem.getColor(),
+                    orderItem.getSize(),
+                    orderItem.getQuantity()
+            ));
             member.restorePoint(order.getPointDiscountAmount());
         }
         return toResponse(order);
@@ -152,7 +161,8 @@ public class OrderService {
                             cart.getItem(),
                             cart.getColor(),
                             cart.getSize(),
-                            cart.getQuantity()
+                            cart.getQuantity(),
+                            itemService.effectivePrice(cart.getItem(), cart.getColor(), cart.getSize())
                     ))
                     .toList();
         }
@@ -168,7 +178,12 @@ public class OrderService {
                 item,
                 blankToDefault(request.color(), item.getColor()),
                 blankToDefault(request.size(), item.getSize()),
-                request.quantity()
+                request.quantity(),
+                itemService.effectivePrice(
+                        item,
+                        blankToDefault(request.color(), item.getColor()),
+                        blankToDefault(request.size(), item.getSize())
+                )
         );
     }
 
@@ -245,6 +260,6 @@ public class OrderService {
         );
     }
 
-    private record OrderSourceLine(Item item, String color, String size, int quantity) {
+    private record OrderSourceLine(Item item, String color, String size, int quantity, int unitPrice) {
     }
 }

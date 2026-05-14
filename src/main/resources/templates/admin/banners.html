@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('홍보 배너')}"></head>
+<body>
+<div class="admin-shell">
+  <aside th:replace="~{admin/fragments :: sidebar('banners')}"></aside>
+  <div class="content">
+    <header th:replace="~{admin/fragments :: topbar}"></header>
+    <main class="page">
+      <div class="page-header">
+        <div>
+          <p class="eyebrow">Promotion</p>
+          <h1>홍보 배너</h1>
+          <p class="summary">홈 화면에 노출될 큰 글씨, 작은 글씨, 사진, 버튼 글씨와 연결 상품을 관리합니다.</p>
+        </div>
+        <a class="button primary" th:href="@{/admin/banners/new}">배너 등록</a>
+      </div>
+
+      <section class="banner-list" th:if="${!#lists.isEmpty(banners)}">
+        <article class="banner-item" th:each="banner : ${banners}">
+          <img class="banner-thumb" th:src="${banner.imageUrl}" alt="">
+          <div class="banner-copy">
+            <p class="muted" th:text="|노출 순서 ${banner.displayOrder}|">노출 순서 0</p>
+            <h2 th:text="${banner.largeText}">큰 글씨</h2>
+            <p th:text="${banner.smallText}">작은 글씨</p>
+            <div class="banner-meta">
+              <span th:text="|버튼: ${banner.buttonLabel}|">버튼: 상품 보기</span>
+              <span th:text="|상품: ${banner.itemName}|">상품: 연결 상품</span>
+            </div>
+          </div>
+          <div class="actions banner-actions">
+            <a class="icon-button" th:href="@{/admin/banners/{id}/edit(id=${banner.id})}">수정</a>
+            <form th:action="@{/admin/banners/{id}/delete(id=${banner.id})}" method="post">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+              <button class="icon-button danger" type="submit">삭제</button>
+            </form>
+          </div>
+        </article>
+      </section>
+
+      <section class="empty-state" th:if="${#lists.isEmpty(banners)}">
+        <h2>등록된 홍보 배너가 없습니다</h2>
+        <p>배너를 등록하면 쇼핑몰 홈 화면 상단에 바로 노출됩니다.</p>
+        <a class="button primary" th:href="@{/admin/banners/new}">첫 배너 등록</a>
+      </section>
+    </main>
+  </div>
+</div>
+</body>
+</html>

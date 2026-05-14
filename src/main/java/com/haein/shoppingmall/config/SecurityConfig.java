@@ -6,8 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haein.shoppingmall.common.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.nio.charset.StandardCharsets;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,6 +26,7 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.InvalidCsrfTokenException;
 import org.springframework.security.web.csrf.MissingCsrfTokenException;
+import org.springframework.web.multipart.support.MultipartFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -39,10 +43,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/admin/login", "/admin/admin.css").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/admin/login").permitAll()
                         .requestMatchers("/admin-api/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/admin/**", "/admin").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/items", "/items/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/items", "/items/*", "/promo-banners").permitAll()
                         .requestMatchers("/signup/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/kakao/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/csrf").permitAll()
@@ -74,6 +79,13 @@ public class SecurityConfig {
     }
 
     @Bean
+    public FilterRegistrationBean<MultipartFilter> multipartFilterRegistration() {
+        FilterRegistrationBean<MultipartFilter> registration = new FilterRegistrationBean<>(new MultipartFilter());
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
+        return registration;
+    }
+
+    @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
@@ -95,6 +107,7 @@ public class SecurityConfig {
             String message
     ) throws java.io.IOException {
         response.setStatus(status);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         if (code == null) {
             objectMapper.writeValue(response.getWriter(), ErrorResponse.of(message));

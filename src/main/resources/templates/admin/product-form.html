@@ -18,7 +18,8 @@
       <form class="form"
             th:object="${itemForm}"
             th:action="${mode == 'edit'} ? @{/admin/products/{id}(id=${itemId})} : @{/admin/products}"
-            method="post">
+            method="post"
+            enctype="multipart/form-data">
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
         <label>
           <span>상품명</span>
@@ -38,24 +39,56 @@
             <input type="number" min="0" th:field="*{shippingPrice}" required>
           </label>
         </div>
-        <div class="grid form-grid-2">
-          <label>
-            <span>사이즈</span>
-            <input th:field="*{size}" required>
-          </label>
-          <label>
-            <span>색상</span>
-            <input th:field="*{color}" required>
-          </label>
-        </div>
+        <fieldset class="option-fieldset">
+          <div class="fieldset-header">
+            <legend>옵션 재고</legend>
+            <button class="button" type="button" data-add-option>+ 옵션 추가</button>
+          </div>
+          <div class="option-list" data-option-list>
+            <div class="option-row" th:each="option, stat : *{options}" data-option-row>
+              <label>
+                <span>색상</span>
+                <input th:field="*{options[__${stat.index}__].color}" required>
+              </label>
+              <label>
+                <span>사이즈</span>
+                <input th:field="*{options[__${stat.index}__].size}" required>
+              </label>
+              <label>
+                <span>수량</span>
+                <input type="number" min="0" th:field="*{options[__${stat.index}__].stockQuantity}" required>
+              </label>
+              <label>
+                <span>추가금</span>
+                <input type="number" min="0" step="1000" th:field="*{options[__${stat.index}__].additionalPrice}" required>
+              </label>
+              <button class="icon-button danger" type="button" data-remove-option aria-label="옵션 삭제">삭제</button>
+            </div>
+          </div>
+        </fieldset>
         <label>
           <span>상품 정보</span>
           <textarea th:field="*{information}" required></textarea>
         </label>
-        <label>
-          <span>이미지 URL</span>
-          <textarea th:field="*{pictureUrls}" required></textarea>
-        </label>
+        <fieldset class="image-fieldset">
+          <legend>상품 이미지</legend>
+          <p class="muted">기존 이미지 다음에 새 이미지가 선택한 순서대로 저장됩니다. 수정 시 체크 해제한 기존 이미지는 삭제됩니다.</p>
+          <div class="image-list" th:if="${mode == 'edit' && !#lists.isEmpty(itemForm.retainedPictureUrls)}">
+            <label class="image-choice" th:each="pictureUrl, stat : *{retainedPictureUrls}">
+              <img th:src="${pictureUrl}" alt="">
+              <span>
+                <input type="checkbox" name="retainedPictureUrls" th:value="${pictureUrl}" checked>
+                <span th:text="|${stat.index + 1}. 유지|">1. 유지</span>
+              </span>
+            </label>
+          </div>
+          <label class="file-input">
+            <span th:text="${mode == 'edit'} ? '이미지 추가' : '이미지 파일'">이미지 파일</span>
+            <input type="file" name="imageFiles" accept="image/*" multiple th:required="${mode != 'edit'}" data-image-input>
+          </label>
+          <p class="muted" data-image-count></p>
+          <div class="image-list" data-image-preview></div>
+        </fieldset>
         <fieldset>
           <legend>카테고리</legend>
           <div class="category-list">
@@ -70,5 +103,94 @@
     </main>
   </div>
 </div>
+<script>
+  const optionList = document.querySelector("[data-option-list]");
+  const addOptionButton = document.querySelector("[data-add-option]");
+  const imageInput = document.querySelector("[data-image-input]");
+  const imagePreview = document.querySelector("[data-image-preview]");
+  const imageCount = document.querySelector("[data-image-count]");
+  const selectedImageFiles = [];
+
+  function reindexOptions() {
+    optionList.querySelectorAll("[data-option-row]").forEach((row, index) => {
+      row.querySelectorAll("input").forEach((input) => {
+        input.name = input.name.replace(/options\[\d+]/, `options[${index}]`);
+        input.id = input.id.replace(/options\d+/, `options${index}`);
+      });
+    });
+  }
+
+  function createOptionRow() {
+    const row = optionList.querySelector("[data-option-row]").cloneNode(true);
+    row.querySelectorAll("input").forEach((input) => {
+      input.value = input.type === "number" ? "0" : "";
+    });
+    return row;
+  }
+
+  addOptionButton.addEventListener("click", () => {
+    optionList.appendChild(createOptionRow());
+    reindexOptions();
+  });
+
+  optionList.addEventListener("click", (event) => {
+    const removeButton = event.target.closest("[data-remove-option]");
+    if (!removeButton) {
+      return;
+    }
+    const rows = optionList.querySelectorAll("[data-option-row]");
+    if (rows.length === 1) {
+      rows[0].querySelectorAll("input").forEach((input) => {
+        input.value = input.type === "number" ? "0" : "";
+      });
+      return;
+    }
+    removeButton.closest("[data-option-row]").remove();
+    reindexOptions();
+  });
+
+  document.querySelector("form").addEventListener("submit", reindexOptions);
+
+  function syncImageFiles() {
+    const transfer = new DataTransfer();
+    selectedImageFiles.forEach((file) => transfer.items.add(file));
+    imageInput.files = transfer.files;
+    imageInput.required = imageInput.dataset.initialRequired === "true" && selectedImageFiles.length === 0;
+  }
+
+  function renderImagePreview() {
+    imagePreview.innerHTML = "";
+    imageCount.textContent = selectedImageFiles.length > 0
+      ? `새 이미지 ${selectedImageFiles.length}장 선택됨`
+      : "";
+    selectedImageFiles.forEach((file, index) => {
+      const figure = document.createElement("figure");
+      figure.className = "image-choice";
+      const image = document.createElement("img");
+      image.src = URL.createObjectURL(file);
+      image.alt = "";
+      const caption = document.createElement("figcaption");
+      caption.textContent = `${index + 1}. ${file.name}`;
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "image-remove";
+      removeButton.textContent = "삭제";
+      removeButton.addEventListener("click", () => {
+        selectedImageFiles.splice(index, 1);
+        syncImageFiles();
+        renderImagePreview();
+      });
+      figure.append(image, caption, removeButton);
+      imagePreview.appendChild(figure);
+    });
+  }
+
+  imageInput.dataset.initialRequired = imageInput.required ? "true" : "false";
+  imageInput.addEventListener("change", () => {
+    selectedImageFiles.push(...Array.from(imageInput.files || []));
+    syncImageFiles();
+    renderImagePreview();
+  });
+</script>
 </body>
 </html>

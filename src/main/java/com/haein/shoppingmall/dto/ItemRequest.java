@@ -1,6 +1,7 @@
 package com.haein.shoppingmall.dto;
 
 import com.haein.shoppingmall.domain.CategoryName;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -15,7 +16,8 @@ public record ItemRequest(
         @NotBlank String size,
         @NotBlank String color,
         @NotBlank String information,
-        @NotEmpty List<@NotBlank String> pictureUrls,
-        @NotEmpty List<CategoryName> categories
+        List<@NotBlank String> pictureUrls,
+        @NotEmpty List<CategoryName> categories,
+        @NotEmpty List<@Valid ItemOptionRequest> options
 ) {
 }

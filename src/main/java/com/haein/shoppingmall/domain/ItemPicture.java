@@ -17,6 +17,8 @@ public class ItemPicture {
 
     private String url;
 
+    private Integer displayOrder;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id")
     private Item item;
@@ -25,11 +27,20 @@ public class ItemPicture {
     }
 
     public ItemPicture(String url, Item item) {
+        this(url, item, 0);
+    }
+
+    public ItemPicture(String url, Item item, Integer displayOrder) {
         this.url = url;
         this.item = item;
+        this.displayOrder = displayOrder;
     }
 
     public String getUrl() {
         return url;
+    }
+
+    public Integer getDisplayOrder() {
+        return displayOrder;
     }
 }

@@ -26,6 +26,13 @@ spring:
         format_sql: ${SPRING_JPA_FORMAT_SQL:false}
   jackson:
     default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:10MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:80MB}
+    encoding:
+      charset: UTF-8
+      force: true
 
 server:
   port: ${SERVER_PORT:8080}
@@ -39,7 +46,7 @@ server:
 
 logging:
   level:
-    root: DEBUG
+    org.springframework.security.web.FilterChainProxy: DEBUG
 
 app:
   cors:
@@ -55,3 +62,5 @@ app:
     email: ${APP_ADMIN_EMAIL:}
     password: ${APP_ADMIN_PASSWORD:}
     nickname: ${APP_ADMIN_NICKNAME:관리자}
+  images:
+    storage-dir: ${APP_IMAGE_STORAGE_DIR:images}

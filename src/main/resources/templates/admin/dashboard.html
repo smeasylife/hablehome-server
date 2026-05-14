@@ -11,10 +11,14 @@
         <div>
           <p class="eyebrow">Overview</p>
           <h1>운영 현황</h1>
-          <p class="summary">상품, QnA, 리뷰 답변 업무로 바로 이동할 수 있습니다.</p>
+          <p class="summary">홍보 배너, 상품, QnA, 리뷰 답변 업무로 바로 이동할 수 있습니다.</p>
         </div>
       </div>
       <section class="grid metrics">
+        <a class="metric" th:href="@{/admin/banners}">
+          <p class="metric-label">홍보 배너</p>
+          <p class="metric-value" th:text="${bannerCount}">0</p>
+        </a>
         <a class="metric" th:href="@{/admin/products}">
           <p class="metric-label">상품</p>
           <p class="metric-value" th:text="${itemCount}">0</p>

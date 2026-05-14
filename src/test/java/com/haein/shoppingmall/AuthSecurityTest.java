@@ -185,7 +185,9 @@ class AuthSecurityTest {
 
     @Test
     void itemSearchIgnoresCaseForEnglishNames() throws Exception {
-        itemRepository.save(new Item("CASE Test Bedding", 10000, 9000, 3000, "Q", "White", "영문 검색 테스트"));
+        Item item = new Item("CASE Test Bedding", 10000, 9000, 3000, "Q", "White", "영문 검색 테스트");
+        item.addOption("White", "Q", 3);
+        itemRepository.save(item);
 
         mockMvc.perform(get("/items/search").param("keyword", "case test"))
                 .andExpect(status().isOk())
@@ -236,6 +238,15 @@ class AuthSecurityTest {
         for (org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request : requests) {
             mockMvc.perform(request).andExpect(status().isUnauthorized());
         }
+    }
+
+    @Test
+    void securityErrorResponseUsesUtf8Encoding() throws Exception {
+        mockMvc.perform(get("/auth/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().encoding("UTF-8"))
+                .andExpect(jsonPath("$.message").value("인증이 필요합니다"));
     }
 
     @Test
@@ -373,7 +384,12 @@ class AuthSecurityTest {
                 "color", "White",
                 "information", "테스트 상품 설명",
                 "pictureUrls", List.of("https://example.com/item.jpg"),
-                "categories", List.of("NEW")
+                "categories", List.of("NEW"),
+                "options", List.of(Map.of(
+                        "color", "White",
+                        "size", "Q",
+                        "stockQuantity", 5
+                ))
         ));
     }
 

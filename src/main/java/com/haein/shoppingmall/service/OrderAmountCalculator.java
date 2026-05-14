@@ -2,7 +2,6 @@ package com.haein.shoppingmall.service;
 
 import com.haein.shoppingmall.domain.Coupon;
 import com.haein.shoppingmall.domain.DiscountType;
-import com.haein.shoppingmall.domain.Item;
 import com.haein.shoppingmall.domain.Member;
 import com.haein.shoppingmall.dto.OrderAmountResponse;
 import com.haein.shoppingmall.exception.BusinessException;
@@ -30,7 +29,7 @@ public class OrderAmountCalculator {
         }
 
         int itemTotalAmount = orderLines.stream()
-                .mapToInt(line -> effectivePrice(line.item()) * line.quantity())
+                .mapToInt(line -> line.unitPrice() * line.quantity())
                 .sum();
         int shippingFee = itemTotalAmount >= FREE_SHIPPING_THRESHOLD ? 0 : DEFAULT_SHIPPING_FEE;
         int couponDiscountAmount = calculateCouponDiscount(couponId, itemTotalAmount);
@@ -45,14 +44,6 @@ public class OrderAmountCalculator {
                 pointDiscountAmount,
                 paymentAmount
         );
-    }
-
-    public int effectivePrice(Item item) {
-        Integer salePrice = item.getSalePrice();
-        if (salePrice != null && salePrice > 0) {
-            return salePrice;
-        }
-        return item.getPrice();
     }
 
     private int calculateCouponDiscount(Long couponId, int itemTotalAmount) {
@@ -96,6 +87,6 @@ public class OrderAmountCalculator {
         return point;
     }
 
-    public record OrderLine(Item item, int quantity) {
+    public record OrderLine(int unitPrice, int quantity) {
     }
 }

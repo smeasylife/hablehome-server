@@ -5,13 +5,17 @@ import com.haein.shoppingmall.domain.Role;
 import com.haein.shoppingmall.dto.AdminAnswerForm;
 import com.haein.shoppingmall.dto.AdminItemForm;
 import com.haein.shoppingmall.dto.AdminLoginForm;
+import com.haein.shoppingmall.dto.AdminPromoBannerForm;
 import com.haein.shoppingmall.security.AuthMember;
 import com.haein.shoppingmall.service.AuthService;
+import com.haein.shoppingmall.service.ItemImageStorageService;
 import com.haein.shoppingmall.service.ItemService;
+import com.haein.shoppingmall.service.PromoBannerService;
 import com.haein.shoppingmall.service.QuestionService;
 import com.haein.shoppingmall.service.ReviewService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -27,19 +31,25 @@ public class AdminPageController {
 
     private final AuthService authService;
     private final ItemService itemService;
+    private final ItemImageStorageService itemImageStorageService;
     private final QuestionService questionService;
     private final ReviewService reviewService;
+    private final PromoBannerService promoBannerService;
 
     public AdminPageController(
             AuthService authService,
             ItemService itemService,
+            ItemImageStorageService itemImageStorageService,
             QuestionService questionService,
-            ReviewService reviewService
+            ReviewService reviewService,
+            PromoBannerService promoBannerService
     ) {
         this.authService = authService;
         this.itemService = itemService;
+        this.itemImageStorageService = itemImageStorageService;
         this.questionService = questionService;
         this.reviewService = reviewService;
+        this.promoBannerService = promoBannerService;
     }
 
     @GetMapping("/admin/login")
@@ -85,6 +95,7 @@ public class AdminPageController {
         var questions = questionService.findAdminQuestions();
         var reviews = reviewService.findAdminReviews();
         model.addAttribute("itemCount", itemService.findItems(0, null).size());
+        model.addAttribute("bannerCount", promoBannerService.findBanners().size());
         model.addAttribute("questionCount", questions.stream().filter(question -> question.answer() == null || question.answer().isBlank()).count());
         model.addAttribute("reviewCount", reviews.stream().filter(review -> review.adminComment() == null || review.adminComment().isBlank()).count());
         return "admin/dashboard";
@@ -106,7 +117,11 @@ public class AdminPageController {
 
     @PostMapping("/admin/products")
     public String createProduct(@ModelAttribute AdminItemForm itemForm) {
-        itemService.createItem(itemForm.toItemRequest());
+        Long itemId = itemService.createItem(itemForm.toItemRequest());
+        itemService.replaceItemPictures(
+                itemId,
+                itemImageStorageService.replaceImages(itemId, List.of(), itemForm.getImageFiles())
+        );
         return "redirect:/admin/products";
     }
 
@@ -122,6 +137,10 @@ public class AdminPageController {
     @PostMapping("/admin/products/{itemId}")
     public String updateProduct(@PathVariable Long itemId, @ModelAttribute AdminItemForm itemForm) {
         itemService.updateItem(itemId, itemForm.toItemRequest());
+        itemService.replaceItemPictures(
+                itemId,
+                itemImageStorageService.replaceImages(itemId, itemForm.getRetainedPictureUrls(), itemForm.getImageFiles())
+        );
         return "redirect:/admin/products";
     }
 
@@ -129,6 +148,50 @@ public class AdminPageController {
     public String deleteProduct(@PathVariable Long itemId) {
         itemService.deleteItem(itemId);
         return "redirect:/admin/products";
+    }
+
+    @GetMapping("/admin/banners")
+    public String banners(Model model) {
+        model.addAttribute("banners", promoBannerService.findBanners());
+        return "admin/banners";
+    }
+
+    @GetMapping("/admin/banners/new")
+    public String newBanner(Model model) {
+        model.addAttribute("bannerForm", new AdminPromoBannerForm());
+        model.addAttribute("items", itemService.findItems(0, null));
+        model.addAttribute("mode", "create");
+        return "admin/banner-form";
+    }
+
+    @PostMapping("/admin/banners")
+    public String createBanner(@ModelAttribute AdminPromoBannerForm bannerForm) {
+        promoBannerService.createBanner(bannerForm);
+        return "redirect:/admin/banners";
+    }
+
+    @GetMapping("/admin/banners/{bannerId}/edit")
+    public String editBanner(@PathVariable Long bannerId, Model model) {
+        model.addAttribute("bannerForm", AdminPromoBannerForm.from(promoBannerService.findBanner(bannerId)));
+        model.addAttribute("items", itemService.findItems(0, null));
+        model.addAttribute("mode", "edit");
+        model.addAttribute("bannerId", bannerId);
+        return "admin/banner-form";
+    }
+
+    @PostMapping("/admin/banners/{bannerId}")
+    public String updateBanner(
+            @PathVariable Long bannerId,
+            @ModelAttribute AdminPromoBannerForm bannerForm
+    ) {
+        promoBannerService.updateBanner(bannerId, bannerForm);
+        return "redirect:/admin/banners";
+    }
+
+    @PostMapping("/admin/banners/{bannerId}/delete")
+    public String deleteBanner(@PathVariable Long bannerId) {
+        promoBannerService.deleteBanner(bannerId);
+        return "redirect:/admin/banners";
     }
 
     @GetMapping("/admin/questions")

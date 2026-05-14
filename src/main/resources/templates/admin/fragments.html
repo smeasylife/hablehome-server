@@ -16,14 +16,11 @@
   </div>
   <nav class="nav">
     <a th:classappend="${active == 'dashboard'} ? 'active'" th:href="@{/admin}">대시보드</a>
+    <a th:classappend="${active == 'banners'} ? 'active'" th:href="@{/admin/banners}">홍보 배너</a>
     <a th:classappend="${active == 'products'} ? 'active'" th:href="@{/admin/products}">상품 목록</a>
     <a th:classappend="${active == 'product-new'} ? 'active'" th:href="@{/admin/products/new}">상품 등록</a>
     <a th:classappend="${active == 'questions'} ? 'active'" th:href="@{/admin/questions}">QnA 답변</a>
     <a th:classappend="${active == 'reviews'} ? 'active'" th:href="@{/admin/reviews}">리뷰 답변</a>
-    <form th:action="@{/admin/logout}" method="post">
-      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-      <button type="submit">로그아웃</button>
-    </form>
   </nav>
 </aside>
 
@@ -32,7 +29,13 @@
     <p class="muted">관리자 콘솔</p>
     <p class="topbar-title">Hable 운영 관리</p>
   </div>
-  <a class="button" th:href="@{/}">쇼핑몰 보기</a>
+  <div class="topbar-actions">
+    <a class="button" th:href="@{/}">쇼핑몰 보기</a>
+    <form class="logout-form" th:action="@{/admin/logout}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+      <button class="button small" type="submit">로그아웃</button>
+    </form>
+  </div>
 </header>
 </body>
 </html>
