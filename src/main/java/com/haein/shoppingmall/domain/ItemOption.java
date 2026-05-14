@@ -67,6 +67,22 @@ public class ItemOption {
         this.item = item;
     }
 
+    public void update(String color, String size, Integer stockQuantity, Integer additionalPrice) {
+        if (color == null || color.isBlank() || size == null || size.isBlank()) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "색상과 사이즈를 입력해 주세요");
+        }
+        if (stockQuantity == null || stockQuantity < 0) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "재고 수량은 0 이상이어야 합니다");
+        }
+        if (additionalPrice == null || additionalPrice < 0) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "옵션 추가금은 0 이상이어야 합니다");
+        }
+        this.color = color.trim();
+        this.size = size.trim();
+        this.stockQuantity = stockQuantity;
+        this.additionalPrice = additionalPrice;
+    }
+
     public void decreaseStock(int quantity) {
         if (quantity < 1) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "수량은 1개 이상이어야 합니다");

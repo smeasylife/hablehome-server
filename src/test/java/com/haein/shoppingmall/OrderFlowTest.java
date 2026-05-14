@@ -9,8 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haein.shoppingmall.domain.Credential;
+import com.haein.shoppingmall.domain.CategoryName;
 import com.haein.shoppingmall.domain.IdentityProvider;
 import com.haein.shoppingmall.domain.Item;
+import com.haein.shoppingmall.dto.ItemOptionRequest;
+import com.haein.shoppingmall.dto.ItemRequest;
 import com.haein.shoppingmall.domain.Member;
 import com.haein.shoppingmall.domain.Role;
 import com.haein.shoppingmall.dto.LoginRequest;
@@ -18,6 +21,7 @@ import com.haein.shoppingmall.repository.CredentialRepository;
 import com.haein.shoppingmall.repository.ItemOptionRepository;
 import com.haein.shoppingmall.repository.ItemRepository;
 import com.haein.shoppingmall.repository.MemberRepository;
+import com.haein.shoppingmall.service.ItemService;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +67,9 @@ class OrderFlowTest {
 
     @Autowired
     private ItemOptionRepository itemOptionRepository;
+
+    @Autowired
+    private ItemService itemService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -164,6 +171,38 @@ class OrderFlowTest {
                                 "shippingAddress", shippingAddress()
                         ))))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateItemReusesExistingOptionsWhenOnlyStockChanges() {
+        Long optionId = itemOptionRepository.findByItemIdAndColorAndSize(item.getId(), "White", "Q")
+                .orElseThrow()
+                .getId();
+
+        itemService.updateItem(item.getId(), new ItemRequest(
+                "테스트 이불",
+                30_000,
+                20_000,
+                3_000,
+                "S / Q",
+                "White",
+                "테스트 상품",
+                List.of(),
+                List.of(CategoryName.NEW),
+                List.of(
+                        new ItemOptionRequest("White", "S", 3, 0),
+                        new ItemOptionRequest("White", "Q", 8, 20_000)
+                )
+        ));
+
+        assertThat(itemOptionRepository.findByItemIdAndColorAndSize(item.getId(), "White", "Q").orElseThrow().getId())
+                .isEqualTo(optionId);
+        assertThat(itemOptionRepository.findByItemIdAndColorAndSize(item.getId(), "White", "Q").orElseThrow().getStockQuantity())
+                .isEqualTo(8);
+        assertThat(itemOptionRepository.findAll().stream()
+                .filter(option -> option.getItem().getId().equals(item.getId()))
+                .count())
+                .isEqualTo(2);
     }
 
     @Test

@@ -10,7 +10,9 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 public class Item {
@@ -83,12 +85,31 @@ public class Item {
     }
 
     public void replaceOptions(List<ItemOption> itemOptions) {
-        options.clear();
-        itemOptions.forEach(option -> {
+        Map<String, ItemOption> existingOptions = new LinkedHashMap<>();
+        options.forEach(option -> existingOptions.put(optionKey(option.getColor(), option.getSize()), option));
+        Map<String, ItemOption> requestedOptions = new LinkedHashMap<>();
+        itemOptions.forEach(option -> requestedOptions.put(optionKey(option.getColor(), option.getSize()), option));
+
+        options.removeIf(option -> !requestedOptions.containsKey(optionKey(option.getColor(), option.getSize())));
+        requestedOptions.forEach((key, option) -> {
+            ItemOption existingOption = existingOptions.get(key);
+            if (existingOption != null) {
+                existingOption.update(
+                        option.getColor(),
+                        option.getSize(),
+                        option.getStockQuantity(),
+                        option.getAdditionalPrice()
+                );
+                return;
+            }
             option.assignItem(this);
             options.add(option);
         });
         refreshOptionSummary();
+    }
+
+    private String optionKey(String color, String size) {
+        return color.trim() + "\n" + size.trim();
     }
 
     public ItemOption addOption(String color, String size, Integer stockQuantity) {
